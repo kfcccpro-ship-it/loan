@@ -21,28 +21,206 @@
   --safe-b:env(safe-area-inset-bottom,0px);
   --fs:1;
 }
-/* 2배 글자 크기 */
-body.fs2 .sinput{font-size:calc(16px * 2)!important;}
-body.fs2 .ctit{font-size:calc(14px * 2)!important;line-height:1.5!important;}
-body.fs2 .cprev{font-size:calc(12px * 2)!important;line-height:1.8!important;}
-body.fs2 .bp{font-size:calc(10px * 2)!important;padding:3px 10px!important;}
-body.fs2 .bc{font-size:calc(10px * 2)!important;padding:3px 10px!important;}
-body.fs2 .tname{font-size:calc(14px * 2)!important;}
-body.fs2 .chname{font-size:calc(13px * 2)!important;}
-body.fs2 .chcnt{font-size:calc(11px * 2)!important;}
-body.fs2 .tcnt{font-size:calc(11px * 2)!important;}
-body.fs2 .chip{font-size:calc(13px * 2)!important;padding:10px 16px!important;}
-body.fs2 .rinfo{font-size:calc(12px * 2)!important;}
-body.fs2 .rlbl{font-size:calc(12px * 2)!important;}
-body.fs2 .logo{font-size:calc(15px * 2)!important;}
-body.fs2 .nbtn{font-size:calc(10px * 2)!important;}
-body.fs2 .nico{font-size:calc(19px * 2)!important;}
-body.fs2 .mtit{font-size:calc(15px * 2)!important;}
-body.fs2 .mctnt{font-size:calc(13px * 2)!important;line-height:2.1!important;}
-body.fs2 .modal-bm{font-size:calc(15px * 2)!important;}
-body.fs2 .mbm{font-size:calc(15px * 2)!important;}
-body.fs2 .rdel{font-size:calc(12px * 2)!important;}
-body.fs2 .bmbtn{font-size:calc(21px * 2)!important;}
+
+/* ═══════════════════════════════════════════════════════
+   2배 글자 크기 모드 — 모바일 최적화
+   대상: 삼성인터넷 / 크롬 / 카카오톡 웹뷰 (Android)
+   기준 화면폭: 360px(보급형) ~ 430px(플래그십)
+   ═══════════════════════════════════════════════════════ */
+
+/* ── CSS 변수 재정의 ── */
+body.fs2{
+  --nav-h:88px;    /* 아이콘+텍스트 2배 → 네비 높이 확장 */
+}
+
+/* ── 앱 컨테이너: 네비 높이 반영 ── */
+body.fs2 .app{
+  padding-bottom:calc(88px + var(--safe-b) + 12px)!important;
+}
+
+/* ── 헤더 ── */
+body.fs2 .hdr-in{height:64px!important;}
+body.fs2 .logo{font-size:20px!important;}
+body.fs2 .gear-btn{font-size:26px!important;padding:6px!important;}
+
+/* ── 하단 네비게이션 ── */
+body.fs2 .nbtn{
+  font-size:16px!important;
+  height:88px!important;
+  gap:5px!important;
+  padding:10px 0!important;
+}
+body.fs2 .nico{font-size:32px!important;}
+
+/* ── 검색창 ── */
+body.fs2 .sinput{
+  font-size:22px!important;
+  padding:18px 56px 18px 56px!important;
+  border-radius:14px!important;
+}
+body.fs2 .sinput::placeholder{font-size:20px!important;}
+body.fs2 .sico{
+  font-size:22px!important;
+  left:16px!important;
+}
+body.fs2 .sclr{
+  width:34px!important;height:34px!important;
+  font-size:16px!important;
+  right:12px!important;
+}
+
+/* ── 최근 검색어 ── */
+body.fs2 .rlbl{
+  font-size:18px!important;
+  margin-bottom:12px!important;
+  flex-direction:column!important;
+  align-items:flex-start!important;
+  gap:6px!important;
+}
+body.fs2 .rdel{
+  font-size:17px!important;
+  padding:6px 10px!important;
+  background:var(--bg-gray-100)!important;
+  border-radius:8px!important;
+}
+body.fs2 .chips{gap:8px!important;margin-bottom:16px!important;}
+body.fs2 .chip{
+  font-size:18px!important;
+  padding:10px 16px!important;
+  border-radius:24px!important;
+}
+
+/* ── 검색 결과 정보 ── */
+body.fs2 .rinfo{font-size:17px!important;margin-bottom:12px!important;}
+
+/* ── 카드 ── */
+body.fs2 .card{
+  border-radius:18px!important;
+  margin-bottom:12px!important;
+}
+body.fs2 .chead{
+  padding:18px 16px 14px!important;
+  gap:10px!important;
+  align-items:flex-start!important;
+}
+
+/* ── 배지: 작은 화면에서 세로 배치 ── */
+body.fs2 .bdgs{
+  flex-direction:column!important;
+  gap:5px!important;
+  margin-bottom:8px!important;
+}
+body.fs2 .bp{
+  font-size:16px!important;
+  padding:4px 10px!important;
+  border-radius:6px!important;
+  display:inline-block!important;
+  width:fit-content!important;
+}
+body.fs2 .bc{
+  font-size:16px!important;
+  padding:4px 10px!important;
+  border-radius:6px!important;
+  display:inline-block!important;
+  width:fit-content!important;
+}
+
+/* ── 카드 제목 ── */
+body.fs2 .ctit{
+  font-size:22px!important;
+  line-height:1.5!important;
+  word-break:keep-all!important;
+}
+
+/* ── 북마크 버튼 ── */
+body.fs2 .bmbtn{
+  font-size:30px!important;
+  min-width:44px!important;
+  padding:4px 0 4px 8px!important;
+}
+
+/* ── 카드 미리보기 ── */
+body.fs2 .cprev{
+  font-size:19px!important;
+  line-height:1.85!important;
+  padding:12px 16px 16px!important;
+}
+body.fs2 .ctit mark,
+body.fs2 .cprev mark{
+  padding:0 2px!important;
+  border-radius:3px!important;
+}
+
+/* ── 목차(TOC) ── */
+body.fs2 .tpart{
+  border-radius:18px!important;
+  margin-bottom:10px!important;
+}
+body.fs2 .thd{padding:18px 16px!important;}
+body.fs2 .tname{
+  font-size:20px!important;
+  line-height:1.4!important;
+  word-break:keep-all!important;
+}
+body.fs2 .tright{gap:10px!important;}
+body.fs2 .tcnt{font-size:17px!important;}
+body.fs2 .tarr{font-size:16px!important;}
+body.fs2 .tch{
+  padding:16px 16px 16px 28px!important;
+}
+body.fs2 .chname{
+  font-size:19px!important;
+  line-height:1.4!important;
+  word-break:keep-all!important;
+}
+body.fs2 .chcnt{font-size:17px!important;}
+
+/* ── 모달 ── */
+body.fs2 .modal{max-height:92vh!important;}
+body.fs2 .mhdl{
+  width:48px!important;height:5px!important;
+  margin:14px auto 0!important;
+}
+body.fs2 .mhd{padding:18px 16px 16px!important;}
+body.fs2 .mbdgs{
+  flex-direction:column!important;
+  gap:5px!important;
+  margin-bottom:10px!important;
+}
+body.fs2 .mtit{
+  font-size:22px!important;
+  line-height:1.5!important;
+}
+body.fs2 .mclose{
+  font-size:28px!important;
+  min-width:44px!important;
+  min-height:44px!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:flex-end!important;
+}
+body.fs2 .mbody{padding:18px 16px!important;}
+body.fs2 .mctnt{
+  font-size:20px!important;
+  line-height:2.0!important;
+}
+body.fs2 .mctnt mark{padding:0 2px!important;}
+body.fs2 .mft{padding:14px 16px!important;}
+body.fs2 .mbm{
+  font-size:20px!important;
+  padding:18px!important;
+  border-radius:14px!important;
+}
+
+/* ── 빈 상태 / 검색 없음 ── */
+body.fs2 .eico{font-size:52px!important;}
+body.fs2 .etxt{font-size:20px!important;line-height:2.0!important;}
+body.fs2 .nores{font-size:20px!important;}
+
+/* ── 설정 화면(fs2 선택 미리보기) ── */
+body.fs2 .ss-title{font-size:26px!important;}
+body.fs2 .ss-sub{font-size:18px!important;}
+
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
 html,body{height:100%;overflow-x:hidden;}
 body{font-family:'Noto Sans KR',-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg-gray-50);color:var(--text-primary);-webkit-font-smoothing:antialiased;}
@@ -272,7 +450,8 @@ function DS(q){
 }
 function cHTML(a,kws){
   var bm=IBM(a.id);
-  var preview=(a.body||'').slice(0,160)+((a.body&&a.body.length>160)?'...':'');
+  var previewLen=document.body.classList.contains('fs2')?80:160;
+  var preview=(a.body||'').slice(0,previewLen)+((a.body&&a.body.length>previewLen)?'...':'');
   return '<div class="card" id="card-'+a.id+'">'+
     '<div class="chead" onclick="OM('+a.id+')">'+
       '<div class="cmeta">'+
@@ -363,7 +542,7 @@ try{
 }catch(e){
   document.getElementById('LD').innerHTML='<div style="padding:24px;text-align:center;color:#DC2626"><div style="font-size:32px;margin-bottom:12px">&#x26A0;&#xFE0F;</div><div style="font-weight:600;margin-bottom:6px">데이터 로딩 실패</div><div style="font-size:13px;color:#666">인터넷 연결 후 새로고침 해주세요<br>'+e.message+'</div></div>';
 }
-
+;
 /* ── Settings ── */
 var curFS = 1;
 window.selectFS = function(n){
@@ -389,13 +568,12 @@ window.openSettings = function(){
   document.getElementById('SS').style.display = 'flex';
 }
 // Check saved setting on load
-(function(){
-  var saved = parseInt(localStorage.getItem('mg_fs')||'0');
-  if(saved === 1 || saved === 2){
-    applyFS(saved);
-    document.getElementById('SS').style.display = 'none';
-  }
-})();
+var _ss = document.getElementById('SS');
+var _savedFS = parseInt(localStorage.getItem('mg_fs')||'0');
+if(_ss && (_savedFS === 1 || _savedFS === 2)){
+  applyFS(_savedFS);
+  _ss.style.display = 'none';
+}
 })();
 </script>
 </body>
