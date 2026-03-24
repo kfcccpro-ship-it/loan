@@ -19,7 +19,30 @@
   --shadow-card:0 1px 4px rgba(0,0,0,0.07);
   --nav-h:56px;
   --safe-b:env(safe-area-inset-bottom,0px);
+  --fs:1;
 }
+/* 2배 글자 크기 */
+body.fs2 .sinput{font-size:calc(16px * 2)!important;}
+body.fs2 .ctit{font-size:calc(14px * 2)!important;line-height:1.5!important;}
+body.fs2 .cprev{font-size:calc(12px * 2)!important;line-height:1.8!important;}
+body.fs2 .bp{font-size:calc(10px * 2)!important;padding:3px 10px!important;}
+body.fs2 .bc{font-size:calc(10px * 2)!important;padding:3px 10px!important;}
+body.fs2 .tname{font-size:calc(14px * 2)!important;}
+body.fs2 .chname{font-size:calc(13px * 2)!important;}
+body.fs2 .chcnt{font-size:calc(11px * 2)!important;}
+body.fs2 .tcnt{font-size:calc(11px * 2)!important;}
+body.fs2 .chip{font-size:calc(13px * 2)!important;padding:10px 16px!important;}
+body.fs2 .rinfo{font-size:calc(12px * 2)!important;}
+body.fs2 .rlbl{font-size:calc(12px * 2)!important;}
+body.fs2 .logo{font-size:calc(15px * 2)!important;}
+body.fs2 .nbtn{font-size:calc(10px * 2)!important;}
+body.fs2 .nico{font-size:calc(19px * 2)!important;}
+body.fs2 .mtit{font-size:calc(15px * 2)!important;}
+body.fs2 .mctnt{font-size:calc(13px * 2)!important;line-height:2.1!important;}
+body.fs2 .modal-bm{font-size:calc(15px * 2)!important;}
+body.fs2 .mbm{font-size:calc(15px * 2)!important;}
+body.fs2 .rdel{font-size:calc(12px * 2)!important;}
+body.fs2 .bmbtn{font-size:calc(21px * 2)!important;}
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
 html,body{height:100%;overflow-x:hidden;}
 body{font-family:'Noto Sans KR',-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg-gray-50);color:var(--text-primary);-webkit-font-smoothing:antialiased;}
@@ -104,10 +127,65 @@ body{font-family:'Noto Sans KR',-apple-system,BlinkMacSystemFont,sans-serif;back
 .mft{padding:12px 14px;border-top:1px solid var(--border-default);flex-shrink:0;}
 .mbm{width:100%;padding:14px;border:none;border-radius:var(--radius-md);font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;background:var(--bg-gray-100);color:var(--text-primary);transition:all .15s;}
 .mbm.on{background:var(--blue-bg);color:var(--blue-primary);}
+
+/* ── Settings Screen ── */
+.settings-screen{position:fixed;inset:0;background:var(--bg-white);z-index:300;display:flex;flex-direction:column;}
+.ss-hd{padding:20px 20px 0;border-bottom:1px solid var(--border-default);padding-bottom:16px;}
+.ss-title{font-size:20px;font-weight:700;margin-bottom:4px;}
+.ss-sub{font-size:13px;color:var(--text-tertiary);}
+.ss-body{flex:1;overflow-y:auto;padding:24px 20px;}
+.ss-section{margin-bottom:28px;}
+.ss-section-title{font-size:12px;font-weight:600;color:var(--text-tertiary);margin-bottom:10px;letter-spacing:0.5px;}
+.fs-options{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.fs-btn{padding:18px 12px;border:2px solid var(--border-default);border-radius:var(--radius-lg);background:var(--bg-white);cursor:pointer;font-family:inherit;text-align:center;transition:all .15s;}
+.fs-btn.active{border-color:var(--blue-primary);background:var(--blue-bg);}
+.fs-btn-label{font-weight:700;color:var(--text-primary);margin-bottom:4px;}
+.fs-btn.active .fs-btn-label{color:var(--blue-primary);}
+.fs-btn-desc{font-size:11px;color:var(--text-tertiary);}
+.fs-preview{margin-top:14px;background:var(--bg-gray-50);border-radius:var(--radius-md);padding:14px;}
+.fs-preview-title{font-size:11px;color:var(--text-tertiary);margin-bottom:8px;font-weight:600;}
+.fs-preview-card{background:var(--bg-white);border-radius:10px;padding:12px;border:1px solid var(--border-default);}
+.ss-confirm-btn{width:100%;padding:16px;background:var(--blue-primary);color:#fff;border:none;border-radius:var(--radius-md);font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:8px;}
+.ss-footer{padding:16px 20px;padding-bottom:calc(16px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--border-default);}
+/* Settings gear btn in header */
+.gear-btn{margin-left:auto;background:none;border:none;font-size:20px;cursor:pointer;padding:4px;color:var(--text-tertiary);}
 </style>
 </head>
 <body>
-<div class="hdr"><div class="hdr-in"><div class="logo">새마을금고 <em>여신업무방법서</em></div></div></div>
+
+<!-- Settings Screen -->
+<div class="settings-screen" id="SS">
+  <div class="ss-hd">
+    <div class="ss-title">⚙️ 화면 설정</div>
+    <div class="ss-sub">글자 크기를 선택하세요</div>
+  </div>
+  <div class="ss-body">
+    <div class="ss-section">
+      <div class="ss-section-title">글자 크기</div>
+      <div class="fs-options">
+        <button class="fs-btn active" id="fsBtn1" onclick="selectFS(1)">
+          <div class="fs-btn-label" style="font-size:16px">가나다</div>
+          <div class="fs-btn-desc">기본 크기</div>
+        </button>
+        <button class="fs-btn" id="fsBtn2" onclick="selectFS(2)">
+          <div class="fs-btn-label" style="font-size:24px">가나다</div>
+          <div class="fs-btn-desc">2배 크게</div>
+        </button>
+      </div>
+      <div class="fs-preview">
+        <div class="fs-preview-title">미리보기</div>
+        <div class="fs-preview-card">
+          <div id="fsPrevTitle" style="font-weight:700;margin-bottom:4px;transition:font-size .2s">제15조(여신기간)</div>
+          <div id="fsPrevBody" style="color:var(--text-secondary);line-height:1.7;transition:font-size .2s">여신기간은 채무자의 상환능력과 자금의 회전기간 등을 고려하여 정한다.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="ss-footer">
+    <button class="ss-confirm-btn" onclick="confirmSettings()">적용하고 시작하기</button>
+  </div>
+</div>
+<div class="hdr"><div class="hdr-in"><div class="logo">새마을금고 <em>여신업무방법서</em></div><button class="gear-btn" onclick="openSettings()" title="설정">⚙️</button></div></div>
 <div id="LD" class="loading"><div class="spin"></div><div>데이터 로딩 중...</div></div>
 <div class="app" id="APP" style="display:none">
   <div id="pane-search">
@@ -285,6 +363,39 @@ try{
 }catch(e){
   document.getElementById('LD').innerHTML='<div style="padding:24px;text-align:center;color:#DC2626"><div style="font-size:32px;margin-bottom:12px">&#x26A0;&#xFE0F;</div><div style="font-weight:600;margin-bottom:6px">데이터 로딩 실패</div><div style="font-size:13px;color:#666">인터넷 연결 후 새로고침 해주세요<br>'+e.message+'</div></div>';
 }
+
+/* ── Settings ── */
+var curFS = 1;
+window.selectFS = function(n){
+  curFS = n;
+  document.getElementById('fsBtn1').classList.toggle('active', n===1);
+  document.getElementById('fsBtn2').classList.toggle('active', n===2);
+  var sz1 = n===2 ? '24px' : '15px';
+  var sz2 = n===2 ? '18px' : '13px';
+  document.getElementById('fsPrevTitle').style.fontSize = sz1;
+  document.getElementById('fsPrevBody').style.fontSize = sz2;
+}
+window.confirmSettings = function(){
+  applyFS(curFS);
+  localStorage.setItem('mg_fs', curFS);
+  document.getElementById('SS').style.display = 'none';
+}
+window.applyFS = function(n){
+  document.body.classList.toggle('fs2', n===2);
+}
+window.openSettings = function(){
+  var saved = parseInt(localStorage.getItem('mg_fs')||'1');
+  selectFS(saved);
+  document.getElementById('SS').style.display = 'flex';
+}
+// Check saved setting on load
+(function(){
+  var saved = parseInt(localStorage.getItem('mg_fs')||'0');
+  if(saved === 1 || saved === 2){
+    applyFS(saved);
+    document.getElementById('SS').style.display = 'none';
+  }
+})();
 })();
 </script>
 </body>
