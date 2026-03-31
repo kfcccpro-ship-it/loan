@@ -38,6 +38,7 @@ async function init() {
     if (!response.ok) throw new Error('data.json fetch failed');
     state.data = await response.json();
     state.articles = state.data.articles.filter(a => !a.supplementary);
+    state.quizArticles = state.articles.filter(isQuizArticleUsable);
     renderSearchResults(state.articles.slice(0, 30), `전체 조문 ${state.articles.length}건`);
     renderToc();
     renderBookmarks();
@@ -95,6 +96,7 @@ function cacheElements() {
     scopeSummary: document.getElementById('scopeSummary'),
     scopeCount: document.getElementById('scopeCount'),
     startQuizBtn: document.getElementById('startQuizBtn'),
+    startDirectMcqBtn: document.getElementById('startDirectMcqBtn'),
     quizStartActions: document.getElementById('quizStartActions'),
     restartOxBtn: document.getElementById('restartOxBtn'),
     startMcqBtn: document.getElementById('startMcqBtn'),
@@ -146,6 +148,7 @@ function bindEvents() {
   els.togglePartSelector.addEventListener('click', () => toggleSelector(els.partSelector, els.togglePartSelector));
   els.toggleChapterSelector.addEventListener('click', () => toggleSelector(els.chapterSelector, els.toggleChapterSelector));
   els.startQuizBtn.addEventListener('click', () => startQuiz('ox'));
+  els.startDirectMcqBtn.addEventListener('click', () => startQuiz('mcq'));
   els.restartOxBtn.addEventListener('click', () => startQuiz('ox'));
   els.startMcqBtn.addEventListener('click', () => startQuiz('mcq'));
 }
@@ -427,7 +430,7 @@ function syncGranularitySelectors() {
 }
 
 function getScopedArticles() {
-  let list = state.articles.filter(article => article.quiz_eligible);
+  let list = (state.quizArticles || []).slice();
   if (state.selectedParts.size) list = list.filter(article => state.selectedParts.has(article.part));
   if (state.selectedChapters.size) list = list.filter(article => state.selectedChapters.has(article.chapter));
   return list;
@@ -459,44 +462,60 @@ function startQuiz(type) {
 }
 
 function buildOxQuiz(scoped) {
-  const selected = selectArticlesByGranularity(scoped, 10);
+  const selected = selectArticlesByGranularity(scoped, 10).filter(isQuizArticleUsable);
   return selected.map((article, index) => {
+    const validLines = extractValidStatements(article);
+    const articleLine = validLines[0] || article.body;
     const truthy = index % 2 === 0;
-    const alternatives = scoped.filter(item => item.id !== article.id);
-    const source = truthy || !alternatives.length ? article : alternatives[Math.floor(Math.random() * alternatives.length)];
+    let statement = articleLine;
+
+    if (!truthy) {
+      const alternatives = shuffle(scoped.filter(item => item.id !== article.id && isQuizArticleUsable(item)));
+      const alt = alternatives.find(item => extractValidStatements(item).length);
+      if (alt) {
+        statement = extractValidStatements(alt)[0];
+      } else {
+        statement = mutateStatement(articleLine);
+      }
+      if (statement === articleLine) statement = mutateStatement(articleLine);
+    }
+
     return {
       kind: 'ox',
       meta: `${labelGranularity()} OX ${index + 1} / 10`,
       article,
-      statement: firstMeaningfulLine(source.body),
+      statement,
       answer: truthy ? 'O' : 'X',
-      explanation: `${article.display_title}\n${article.body}`,
+      explanation: `${article.display_title}
+${cleanQuizBody(article.body)}`,
     };
   });
 }
 
 function buildMcqQuiz(scoped) {
-  const selected = selectArticlesByGranularity(scoped, 10);
+  const selected = selectArticlesByGranularity(scoped, 10).filter(isQuizArticleUsable);
   return selected.map((article, index) => {
     let correct;
     let pool;
     if (state.granularity === 'article') {
       correct = article.display_title;
-      pool = uniqueValues(scoped.map(item => item.display_title));
+      pool = uniqueValues(scoped.filter(isQuizArticleUsable).map(item => item.display_title));
     } else if (state.granularity === 'chapter') {
       correct = article.chapter;
-      pool = uniqueValues(scoped.map(item => item.chapter));
+      pool = uniqueValues(scoped.filter(isQuizArticleUsable).map(item => item.chapter));
     } else {
       correct = article.part;
-      pool = uniqueValues(scoped.map(item => item.part));
+      pool = uniqueValues(scoped.filter(isQuizArticleUsable).map(item => item.part));
     }
+
     return {
       kind: 'mcq',
       meta: `${labelGranularity()} 4지선다 ${index + 1} / 10`,
-      prompt: firstMeaningfulLine(article.body),
+      prompt: extractValidStatements(article)[0] || cleanQuizBody(article.body),
       options: pickChoices(pool, correct),
       answer: correct,
-      explanation: `${article.part} · ${article.chapter} · ${article.display_title}\n${article.body}`,
+      explanation: `${article.part} · ${article.chapter} · ${article.display_title}
+${cleanQuizBody(article.body)}`,
     };
   });
 }
@@ -667,7 +686,55 @@ function labelGranularity() {
 }
 
 function firstMeaningfulLine(body) {
-  return body.split('\n').map(item => item.trim()).find(Boolean) || body;
+  return extractValidStatements({ body })[0] || cleanQuizBody(body);
+}
+
+function cleanQuizBody(body = '') {
+  return String(body)
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/\[[^\]]*\]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function extractValidStatements(article) {
+  const body = cleanQuizBody(article.body || article);
+  const raw = body
+    .replace(/①|②|③|④|⑤|⑥|⑦|⑧|⑨|⑩/g, '\n$& ')
+    .replace(/\s([0-9]+\.)/g, '\n$1')
+    .replace(/\s([가-하]\.)/g, '\n$1')
+    .split(/\n+/)
+    .map(line => line.trim())
+    .filter(Boolean);
+
+  return raw
+    .map(line => line.replace(/^([0-9]+\.|[가-하]\.|[①-⑩])\s*/, '').trim())
+    .map(line => line.replace(/<[^>]*>/g, '').trim())
+    .filter(line => line.length >= 16)
+    .filter(line => !/^(삭제|부칙|별표|별지|서식|목차)/.test(line))
+    .filter(line => !/(개정|신설|전문개정|제목개정)/.test(line) || /한다\.?$|할 수 있다\.?$|하여야 한다\.?$|된다\.?$|아니하다\.?$|있다\.?$|말한다\.?$|로 한다\.?$/.test(line))
+    .filter(line => !/다음 각 호|다음 각 목/.test(line))
+    .filter(line => /[가-힣]/.test(line))
+    .filter(line => /한다\.?$|할 수 있다\.?$|하여야 한다\.?$|된다\.?$|아니하다\.?$|있다\.?$|말한다\.?$|로 한다\.?$/.test(line));
+}
+
+function isQuizArticleUsable(article) {
+  if (!article || article.supplementary || !article.quiz_eligible) return false;
+  if (!/^제\d+조/.test(article.display_title || '')) return false;
+  const body = cleanQuizBody(article.body);
+  if (body.length < 20) return false;
+  if (/^(삭제|부칙)/.test(body)) return false;
+  return extractValidStatements(article).length > 0;
+}
+
+function mutateStatement(line) {
+  if (!line) return '';
+  if (line.includes('할 수 없다')) return line.replace('할 수 없다', '할 수 있다');
+  if (line.includes('하여서는 아니된다')) return line.replace('하여서는 아니된다', '할 수 있다');
+  if (line.includes('아니한다')) return line.replace('아니한다', '한다');
+  if (line.includes('한다')) return line.replace('한다', '하지 않는다');
+  if (line.includes('있다')) return line.replace('있다', '없다');
+  return line + ' 아니다.';
 }
 
 function uniqueValues(items) {
