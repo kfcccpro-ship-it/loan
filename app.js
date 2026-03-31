@@ -495,26 +495,21 @@ ${cleanQuizBody(article.body)}`,
 function buildMcqQuiz(scoped) {
   const selected = selectArticlesByGranularity(scoped, 10).filter(isQuizArticleUsable);
   return selected.map((article, index) => {
-    let correct;
-    let pool;
-    if (state.granularity === 'article') {
-      correct = article.display_title;
-      pool = uniqueValues(scoped.filter(isQuizArticleUsable).map(item => item.display_title));
-    } else if (state.granularity === 'chapter') {
-      correct = article.chapter;
-      pool = uniqueValues(scoped.filter(isQuizArticleUsable).map(item => item.chapter));
-    } else {
-      correct = article.part;
-      pool = uniqueValues(scoped.filter(isQuizArticleUsable).map(item => item.part));
-    }
+    const statements = extractValidStatements(article);
+    const correct = statements[0] || cleanQuizBody(article.body);
+    const options = buildStatementChoices(correct, article, scoped);
 
     return {
       kind: 'mcq',
       meta: `${labelGranularity()} 4지선다 ${index + 1} / 10`,
-      prompt: extractValidStatements(article)[0] || cleanQuizBody(article.body),
-      options: pickChoices(pool, correct),
+      article,
+      prompt: buildMcqPrompt(article, statements),
+      options,
       answer: correct,
-      explanation: `${article.part} · ${article.chapter} · ${article.display_title}
+      explanation: `${article.display_title}
+정답 보기: ${correct}
+
+원문 확인
 ${cleanQuizBody(article.body)}`,
     };
   });
@@ -566,7 +561,7 @@ function renderCurrentQuestion() {
     els.quizArea.innerHTML = `
       <div class="question-card">
         <div class="question-meta">${escapeHtml(item.meta)}</div>
-        <div class="question-title">다음 설명과 가장 관련 깊은 ${state.granularity === 'article' ? '조문' : state.granularity === 'chapter' ? '장' : '편'}을 고르세요.</div>
+        <div class="question-title">[${escapeHtml(item.article.display_title)}] 아래 조문(예문)을 보고 내용과 일치하는 것을 고르세요.</div>
         <div class="question-body">${escapeHtml(item.prompt)}</div>
         <div class="choice-list">${item.options.map(option => `<button class="choice-btn" data-choice="${escapeHtml(option)}">${escapeHtml(option)}</button>`).join('')}</div>
         <div id="feedback"></div>
@@ -735,6 +730,106 @@ function mutateStatement(line) {
   if (line.includes('한다')) return line.replace('한다', '하지 않는다');
   if (line.includes('있다')) return line.replace('있다', '없다');
   return line + ' 아니다.';
+}
+
+function buildMcqPrompt(article, statements) {
+  const lines = statements.slice(0, 2);
+  const excerpt = lines.length ? lines.join(' ') : cleanQuizBody(article.body);
+  return excerpt;
+}
+
+function buildStatementChoices(correct, article, scoped) {
+  const candidates = [];
+  const add = value => {
+    const normalized = normalizeChoice(value);
+    if (!normalized || normalized === normalizeChoice(correct)) return;
+    if (!/[가-힣]/.test(normalized)) return;
+    if (normalized.length < 12) return;
+    if (!candidates.some(item => normalizeChoice(item) === normalized)) candidates.push(value.trim());
+  };
+
+  add(mutateStatementVariant(correct, 0));
+  add(mutateStatementVariant(correct, 1));
+  add(mutateStatementVariant(correct, 2));
+  add(mutateStatementVariant(correct, 3));
+
+  const siblingLines = shuffle(extractValidStatements(article).filter(line => normalizeChoice(line) !== normalizeChoice(correct)));
+  siblingLines.forEach(add);
+
+  const scopedLines = shuffle(scoped
+    .filter(item => item.id !== article.id)
+    .flatMap(item => extractValidStatements(item).slice(0, 1)));
+  scopedLines.forEach(add);
+
+  const finalChoices = [correct, ...candidates.slice(0, 3)];
+  return shuffle(finalChoices).slice(0, 4);
+}
+
+function normalizeChoice(text) {
+  return String(text || '').replace(/\s+/g, ' ').trim();
+}
+
+function mutateStatementVariant(line, variant = 0) {
+  let value = String(line || '').trim();
+  if (!value) return value;
+
+  const replacers = [
+    [
+      ['하여야 한다', '할 수 있다'],
+      ['할 수 있다', '하여야 한다'],
+      ['할 수 없다', '할 수 있다'],
+      ['아니한다', '한다'],
+      ['한다', '하지 않는다'],
+      ['있다', '없다'],
+      ['포함한다', '포함하지 않는다'],
+      ['제외한다', '포함한다'],
+      ['원칙으로 한다', '원칙으로 하지 않는다'],
+      ['말한다', '말하지 않는다'],
+    ],
+    [
+      ['금고', '중앙회'],
+      ['채무자', '보증인'],
+      ['보증인', '채무자'],
+      ['담보', '보증'],
+      ['보증', '담보'],
+      ['대출', '예탁금'],
+      ['예탁금', '대출'],
+      ['가계자금', '기업자금'],
+      ['기업자금', '가계자금'],
+      ['이사장', '채무자'],
+      ['신규대출', '기한연장'],
+      ['기한연장', '신규대출'],
+    ],
+    [
+      ['초과할 수 없다', '초과할 수 있다'],
+      ['이내', '초과'],
+      ['이상', '미만'],
+      ['미만', '이상'],
+      ['이내로 한다', '초과로 한다'],
+      ['적용한다', '적용하지 않는다'],
+      ['받는다', '받지 않는다'],
+    ],
+    [
+      ['다만,', '그리고,'],
+      ['원칙으로', '예외적으로'],
+      ['예외로', '원칙으로'],
+      ['가능하다', '불가능하다'],
+      ['금지', '허용'],
+      ['허용', '금지'],
+    ],
+  ];
+
+  for (const pair of replacers[variant % replacers.length]) {
+    if (value.includes(pair[0])) return value.replace(pair[0], pair[1]);
+  }
+
+  value = tweakFirstNumber(value, variant + 1);
+  if (value !== line) return value;
+  return mutateStatement(value);
+}
+
+function tweakFirstNumber(text, delta = 1) {
+  return String(text).replace(/(\d+)/, (match, num) => String(Number(num) + delta));
 }
 
 function uniqueValues(items) {
