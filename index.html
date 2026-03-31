@@ -2,118 +2,170 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="theme-color" content="#1f4fa3" />
-  <title>MG 여신업무방법서 학습앱</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=20260331" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#3182F6" />
+  <title>MG인재개발원 - 여신업무방법서 학습용 웹앱</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <div class="app-shell">
-    <header class="hero">
-      <div class="hero__badge">MG 여신업무방법서 · 학습용 웹앱</div>
-      <h1>검색하고, 확인하고, 문제로 익히는 여신업무방법서</h1>
-      <p>
-        키워드 검색, 목차 필터, OX/객관식 문제를 한 화면에서 활용할 수 있도록 구성했습니다.
-      </p>
-    </header>
-
-    <main class="main-grid">
-      <section class="card">
-        <div class="section-title-row">
-          <h2>방법서 검색</h2>
-          <button id="openTocBtn" class="ghost-button" type="button">목차 검색</button>
-        </div>
-
-        <div class="search-panel">
-          <label for="keywordInput" class="label">키워드 입력</label>
-          <div class="search-row">
-            <input
-              id="keywordInput"
-              class="text-input"
-              type="text"
-              placeholder="예: 담보, 연체, 대환, 채권보전"
-              autocomplete="off"
-            />
-            <button id="searchBtn" class="primary-button" type="button">검색</button>
-          </div>
-          <div class="chip-row" id="quickKeywords"></div>
-          <p id="searchMeta" class="helper-text">data.json 기준 전체 조문을 불러옵니다.</p>
-        </div>
-
-        <div id="searchResults" class="result-list empty-state">
-          검색어를 입력하면 관련 조문이 표시됩니다.
-        </div>
-      </section>
-
-      <section class="card">
-        <div class="section-title-row">
-          <h2>학습용 문제</h2>
-          <button id="nextQuizBtn" class="ghost-button" type="button">다른 문제</button>
-        </div>
-
-        <div class="quiz-toolbar">
-          <div class="quiz-toolbar__item">
-            <span class="label">문제 유형</span>
-            <select id="quizTypeSelect" class="select-input">
-              <option value="all">전체</option>
-              <option value="ox">OX</option>
-              <option value="multiple">객관식</option>
-            </select>
-          </div>
-        </div>
-
-        <div id="quizContainer" class="quiz-box loading-state">문제를 불러오는 중입니다.</div>
-      </section>
-    </main>
+  <div id="loading" class="loading-screen">
+    <div class="spinner"></div>
+    <div>데이터를 불러오는 중입니다.</div>
   </div>
 
-  <div id="tocModal" class="modal" aria-hidden="true">
-    <div class="modal__backdrop" id="tocBackdrop"></div>
-    <div class="modal__panel" role="dialog" aria-modal="true" aria-labelledby="tocModalTitle">
-      <div class="modal__header">
-        <h2 id="tocModalTitle">목차 검색</h2>
-        <button id="closeTocBtn" class="icon-button" type="button" aria-label="닫기">×</button>
+  <main id="homeView" class="home-view hidden">
+    <section class="hero-card">
+      <div class="hero-badge">MG인재개발원 - 여신업무방법서 학습용 웹앱</div>
+      <h1>검색하고, 확인하고, 문제로 익히는 여신업무방법서</h1>
+      <p>키워드 검색, 목차 필터, OX/객관식 문제를 한 화면에서 활용할 수 있도록 구성했습니다.</p>
+    </section>
+
+    <section class="home-grid">
+      <button id="goSearch" class="home-button">
+        <span class="home-title">방법서 검색</span>
+        <span class="home-desc">익숙한 검색 화면으로 조문, 목차, 즐겨찾기를 바로 확인합니다.</span>
+      </button>
+      <button id="goQuiz" class="home-button alt">
+        <span class="home-title">학습용 문제</span>
+        <span class="home-desc">편·장·조 범위를 섞어 OX 10문제와 4지선다형 학습을 진행합니다.</span>
+      </button>
+    </section>
+  </main>
+
+  <section id="searchView" class="module-view hidden">
+    <header class="hdr">
+      <div class="hdr-in">
+        <button class="nav-icon" id="searchBackBtn" aria-label="처음 화면으로">‹</button>
+        <div class="logo">새마을금고 <em>여신업무방법서</em></div>
+        <button class="nav-icon gear-btn" id="openSettingsBtn" aria-label="설정">⚙️</button>
+      </div>
+    </header>
+
+    <div class="app-shell">
+      <div id="pane-search" class="search-pane">
+        <div class="swrap">
+          <span class="sico">🔎</span>
+          <input type="search" class="sinput" id="searchInput" placeholder="조문 내용, 제목, 키워드 검색"
+            autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" enterkeyhint="search">
+          <button class="sclr" id="clearSearchBtn" aria-label="검색어 지우기">✕</button>
+        </div>
+        <div id="recentSection"></div>
+        <div id="resultInfo" class="rinfo hidden"></div>
+        <div id="searchResults"></div>
       </div>
 
-      <div class="modal__body">
-        <div class="toc-grid">
-          <div>
-            <label class="label" for="partSelect">편</label>
-            <select id="partSelect" class="select-input">
-              <option value="">전체 편</option>
-            </select>
-          </div>
-          <div>
-            <label class="label" for="chapterSelect">장</label>
-            <select id="chapterSelect" class="select-input">
-              <option value="">전체 장</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="toc-actions">
-          <button id="applyTocBtn" class="primary-button" type="button">적용</button>
-          <button id="resetTocBtn" class="secondary-button" type="button">초기화</button>
-        </div>
-
-        <p class="helper-text">
-          편/장을 선택하면 해당 범위의 조문만 하단 검색 결과에 표시됩니다.
-        </p>
+      <div id="pane-toc" class="hidden">
+        <div id="tocList"></div>
       </div>
+
+      <div id="pane-bookmark" class="hidden">
+        <div id="bookmarkList"></div>
+      </div>
+    </div>
+
+    <nav class="bnav">
+      <button class="nbtn active" data-pane="search"><span class="nico">🔎</span>검색</button>
+      <button class="nbtn" data-pane="toc"><span class="nico">📋</span>목차</button>
+      <button class="nbtn" data-pane="bookmark"><span class="nico">⭐</span>즐겨찾기</button>
+    </nav>
+  </section>
+
+  <section id="quizView" class="module-view hidden">
+    <header class="quiz-header">
+      <button class="nav-icon" id="quizBackBtn" aria-label="처음 화면으로">‹</button>
+      <div>
+        <div class="quiz-header-title">학습용 문제</div>
+        <div class="quiz-header-desc">편·장 범위를 섞어 OX 10문제와 4지선다형 학습을 진행합니다.</div>
+      </div>
+    </header>
+
+    <div class="quiz-wrap">
+      <div class="quiz-card">
+        <div class="field-label">출제 기준</div>
+        <div class="segmented three" id="granularityButtons">
+          <button class="seg-btn active" data-granularity="article">조 단위</button>
+          <button class="seg-btn" data-granularity="chapter">장 단위</button>
+          <button class="seg-btn" data-granularity="part">편 단위</button>
+        </div>
+
+        <div class="field-label">OX 이후 기본 이동</div>
+        <div class="segmented two" id="afterOxButtons">
+          <button class="seg-btn active" data-after="ox_review">다시 OX 점검</button>
+          <button class="seg-btn" data-after="multiple_choice">4지선다형</button>
+        </div>
+
+        <div class="selector-box">
+          <div class="selector-head">
+            <span>편 선택</span>
+            <button class="text-btn" id="togglePartSelector">열기</button>
+          </div>
+          <div class="selector-list hidden" id="partSelector"></div>
+        </div>
+
+        <div class="selector-box">
+          <div class="selector-head">
+            <span>장 선택</span>
+            <button class="text-btn" id="toggleChapterSelector">열기</button>
+          </div>
+          <div class="selector-list hidden" id="chapterSelector"></div>
+        </div>
+
+        <div class="summary-box">
+          <div><strong>선택 범위</strong> <span id="scopeSummary">전체</span></div>
+          <div><strong>출제 대상 조문</strong> <span id="scopeCount">0</span>개</div>
+        </div>
+
+        <button id="startQuizBtn" class="primary-btn">OX 10문제 시작</button>
+        <div id="quizStartActions" class="post-actions hidden">
+          <button id="restartOxBtn" class="secondary-btn">조문 이해 OX 다시 점검</button>
+          <button id="startMcqBtn" class="secondary-btn">4지선다형으로 이동</button>
+        </div>
+        <div id="quizArea" class="quiz-area hidden"></div>
+      </div>
+    </div>
+  </section>
+
+  <div id="articleModal" class="mbg hidden">
+    <div class="modal">
+      <div class="mhdl"></div>
+      <div class="mhd">
+        <div class="mtw">
+          <div id="articleBadges" class="mbdgs"></div>
+          <div id="articleTitle" class="mtit"></div>
+        </div>
+        <button class="mclose" id="closeArticleModal">✕</button>
+      </div>
+      <div class="mbody"><div id="articleBody" class="mctnt"></div></div>
+      <div class="mft"><button id="bookmarkToggleBtn" class="mbm">☆ 즐겨찾기 추가</button></div>
     </div>
   </div>
 
-  <template id="searchResultTemplate">
-    <article class="result-card">
-      <div class="result-card__meta"></div>
-      <h3 class="result-card__title"></h3>
-      <p class="result-card__body"></p>
-    </article>
-  </template>
+  <div id="settingsModal" class="settings-screen hidden">
+    <div class="ss-hd">
+      <div class="ss-title">화면 설정</div>
+      <div class="ss-sub">검색 화면의 글자 크기를 선택하세요.</div>
+    </div>
+    <div class="ss-body">
+      <div class="ss-section-title">글자 크기</div>
+      <div class="fs-options">
+        <button class="fs-btn active" data-fontsize="normal">
+          <div class="fs-btn-label">가나다</div>
+          <div class="fs-btn-desc">기본 크기</div>
+        </button>
+        <button class="fs-btn" data-fontsize="large">
+          <div class="fs-btn-label large">가나다</div>
+          <div class="fs-btn-desc">2배 크게</div>
+        </button>
+      </div>
+    </div>
+    <div class="ss-footer">
+      <button id="closeSettingsBtn" class="primary-btn">적용하고 닫기</button>
+    </div>
+  </div>
 
-  <script src="app.js?v=20260331"></script>
+  <script src="app.js"></script>
 </body>
 </html>

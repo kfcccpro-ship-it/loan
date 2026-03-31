@@ -1,52 +1,20 @@
 {
-  "quizzes": [
-    {
-      "id": 1,
-      "type": "ox",
-      "question": "여신심사는 차주의 상환능력만 검토하면 되고 담보가치는 고려하지 않아도 된다.",
-      "answer": "X",
-      "explanation": "여신심사는 상환능력, 자금용도, 담보가치 및 거래실적 등을 종합적으로 검토해야 합니다.",
-      "articleTitle": "제10조 여신심사의 원칙",
-      "articleBody": "여신심사는 차주의 상환능력, 자금용도, 담보가치 및 거래실적 등을 종합적으로 검토하여야 한다."
-    },
-    {
-      "id": 2,
-      "type": "multiple",
-      "question": "다음 중 담보평가 시 고려사항으로 가장 적절한 것은?",
-      "options": [
-        "광고비 집행 여부",
-        "담보물의 권리관계, 환가성 및 시세",
-        "직원의 근무연수만 검토",
-        "차주의 취미생활"
-      ],
-      "answer": "담보물의 권리관계, 환가성 및 시세",
-      "explanation": "담보평가는 담보물의 권리관계, 환가성 및 시세를 고려하여 객관적으로 실시해야 합니다.",
-      "articleTitle": "제18조 담보평가",
-      "articleBody": "담보평가는 담보물의 권리관계, 환가성 및 시세를 고려하여 객관적으로 실시하여야 한다."
-    },
-    {
-      "id": 3,
-      "type": "ox",
-      "question": "연체채권은 연체기간, 회수가능성 및 담보상황 등을 고려하여 관리한다.",
-      "answer": "O",
-      "explanation": "연체채권은 연체기간, 회수가능성 및 담보상황 등을 고려하여 등급별로 관리해야 합니다.",
-      "articleTitle": "제24조 연체채권 관리",
-      "articleBody": "연체채권은 연체기간, 회수가능성 및 담보상황 등을 고려하여 등급별로 관리하고 필요한 조치를 취하여야 한다."
-    },
-    {
-      "id": 4,
-      "type": "multiple",
-      "question": "다음 중 채권보전조치에 해당하는 것은?",
-      "options": [
-        "사내행사 계획 수립",
-        "담보권 실행 및 보증채무 이행청구",
-        "광고문구 작성",
-        "회의실 예약"
-      ],
-      "answer": "담보권 실행 및 보증채무 이행청구",
-      "explanation": "채권보전을 위해 담보권 실행, 보증채무 이행청구 등의 조치를 취할 수 있습니다.",
-      "articleTitle": "제27조 채권보전조치",
-      "articleBody": "채권보전을 위하여 필요하다고 인정되는 경우 담보권 실행, 보증채무 이행청구 등 적절한 조치를 취할 수 있다."
-    }
-  ]
+  "meta": {
+    "version": 1,
+    "description": "문제는 data.json의 조문 데이터를 바탕으로 클라이언트에서 동적으로 생성됩니다. 이 파일은 기본 설정만 담습니다."
+  },
+  "defaults": {
+    "questionCount": 10,
+    "defaultStageAfterOx": "ox_review",
+    "defaultGranularity": "article",
+    "excludeSupplementary": true,
+    "excludeTitles": ["시행일", "경과조치"]
+  },
+  "labels": {
+    "article": "조 단위",
+    "chapter": "장 단위",
+    "part": "편 단위",
+    "ox_review": "조문 이해 OX 재점검",
+    "multiple_choice": "4지선다형으로 이동"
+  }
 }
