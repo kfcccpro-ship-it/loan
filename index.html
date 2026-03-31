@@ -10,10 +10,11 @@
 <body>
   <header class="topbar">
     <div class="hero">
-      <h1>MG인재개발원 여신업무방법서 학습 지원</h1>
-      <p class="subtitle">조문 확인 중심 · OX / 4지선다 · 스마트폰 중심 학습</p>
+      <h1 class="app-title">
+        <span>MG인재개발원</span>
+        <span>여신업무방법서 학습 지원</span>
+      </h1>
       <p class="manual-version">현재 기준 업무방법서 버전: <strong>2026.03.12</strong> 개정본</p>
-      <p class="notice">주의사항 : 교육용 웹앱으로 업데이트 및 기타세부사항은 직접 엠지니를 활용하시기 바랍니다.</p>
     </div>
   </header>
 
@@ -28,18 +29,18 @@
         <div class="card-header">
           <div>
             <h2>방법서 검색</h2>
-            <p>키워드를 입력하면 관련 조문을 빠르게 모아 보여주고, 검색어는 노란색으로 강조됩니다.</p>
+            <p>키워드로 조문 내용을 바로 찾고, 목차에서 편·장을 선택해 빠르게 이동할 수 있습니다.</p>
           </div>
         </div>
 
         <div class="search-row">
-          <input id="searchInput" type="search" placeholder="예: 금리인하, 동일인대출, 중도상환수수료" />
+          <input id="searchInput" type="search" placeholder="예: 동일인, 중도상환수수료, 금리인하" />
           <button id="clearSearchBtn" class="ghost-btn" type="button">초기화</button>
         </div>
 
         <div class="search-help">
           <span id="articleCount" class="count-text"></span>
-          <span class="hint">목차에서 바로 조문을 선택하거나, 키워드로 결과를 좁혀 보세요.</span>
+          <span id="searchSummary" class="hint">키워드를 입력하면 관련 조문이 미리보기 카드로 정리됩니다.</span>
         </div>
       </section>
 
@@ -48,7 +49,7 @@
           <div class="toc-head">
             <div>
               <h3>목차</h3>
-              <p>조문을 선택하면 아래 본문으로 바로 이동합니다.</p>
+              <p>편을 펼친 뒤 장을 선택하면 해당 조문만 바로 볼 수 있습니다.</p>
             </div>
           </div>
           <div id="tocList" class="toc-list"></div>
@@ -65,19 +66,19 @@
         <div class="card-header">
           <div>
             <h2>학습용 문제</h2>
-            <p>먼저 문제의 범위를 정한 뒤, 기본 세팅인 OX 10문제와 4지선다 10문제로 학습합니다.</p>
+            <p>먼저 범위를 정하고, 기본 세팅인 OX 10문제와 4지선다 10문제로 학습합니다.</p>
           </div>
         </div>
 
         <div class="quiz-guide">
           <div class="guide-badge">기본 세팅</div>
-          <div class="guide-text">랜덤 범위에서 <strong>OX 10문제 → 4지선다 10문제</strong> 순서로 제공됩니다. 다 풀면 추가 문제를 이어서 생성합니다.</div>
+          <div class="guide-text">랜덤 범위에서 <strong>OX 10문제 → 4지선다 10문제</strong> 순서로 제공됩니다. 한 세트를 다 풀면 추가 문제를 이어서 생성합니다.</div>
         </div>
       </section>
 
       <section class="card quiz-builder">
         <div class="builder-title">문제의 범위 설정</div>
-        <p class="builder-copy">전체 범위에서 랜덤으로 풀 수도 있고, 특정 편/장/조 구간만 골라서 집중 학습할 수도 있습니다.</p>
+        <p class="builder-copy">전체 범위 랜덤 학습도 가능하고, 특정 편/장/조 구간만 골라 집중 학습도 가능합니다.</p>
 
         <div class="quiz-builder-grid">
           <div class="field wide">
@@ -143,12 +144,19 @@
     </section>
   </main>
 
+  <footer class="footer-note">
+    <div class="footer-note-inner">
+      주의사항 : 교육용 웹앱으로 업데이트 및 기타세부사항은 직접 엠지니를 활용하시기 바랍니다.
+    </div>
+  </footer>
+
   <template id="articleTemplate">
     <article class="article-card card">
       <div class="article-head">
         <div class="article-path"></div>
         <h3 class="article-title"></h3>
       </div>
+      <div class="article-preview"></div>
       <div class="article-body"></div>
     </article>
   </template>
@@ -158,6 +166,7 @@
       <div class="quiz-type"></div>
       <div class="quiz-meta"></div>
       <h3 class="quiz-prompt"></h3>
+      <div class="quiz-statement"></div>
       <div class="quiz-options"></div>
       <div class="quiz-result"></div>
       <details class="source-box">

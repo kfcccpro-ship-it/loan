@@ -7,6 +7,8 @@ let currentQuizCorrect = 0;
 
 const state = {
   tab: "manual",
+  selectedPart: "",
+  selectedChapter: "",
   quizPreset: "random",
   quizPart: "",
   quizChapter: "",
@@ -29,8 +31,13 @@ function escapeHtml(str){
 function highlight(text, keyword){
   if(!keyword) return escapeHtml(text);
   const safe = escapeHtml(text);
-  const pattern = keyword.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  return safe.replace(new RegExp(`(${pattern})`, "gi"), "<mark>$1</mark>");
+  const words = keyword.trim().split(/\s+/).filter(Boolean).sort((a,b) => b.length - a.length);
+  let result = safe;
+  words.forEach(word => {
+    const pattern = word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    result = result.replace(new RegExp(`(${pattern})`, "gi"), "<mark>$1</mark>");
+  });
+  return result;
 }
 
 function articleNumber(articleNo){
@@ -80,44 +87,137 @@ function setTab(tabName){
   $("#quizTab").classList.toggle("active", tabName === "quiz");
 }
 
-function buildTocItems(filtered){
-  const groups = filtered.slice(0, 300).map(article => `
-    <button class="toc-item" data-target="${escapeHtml(article.id)}">
-      ${highlight(`${article.article_no} ${article.title}`, currentSearch)}
-    </button>
+function findPreviewSnippet(text, keyword, size = 140){
+  const plain = String(text || "").replace(/\s+/g, " ").trim();
+  if(!plain) return "";
+  if(!keyword.trim()) return plain.slice(0, size) + (plain.length > size ? "..." : "");
+
+  const words = keyword.trim().split(/\s+/).filter(Boolean);
+  const lower = plain.toLowerCase();
+  let foundIndex = -1;
+
+  for(const word of words){
+    const idx = lower.indexOf(word.toLowerCase());
+    if(idx !== -1 && (foundIndex === -1 || idx < foundIndex)) foundIndex = idx;
+  }
+
+  if(foundIndex === -1){
+    return plain.slice(0, size) + (plain.length > size ? "..." : "");
+  }
+
+  const start = Math.max(0, foundIndex - Math.floor(size / 3));
+  const end = Math.min(plain.length, start + size);
+  const prefix = start > 0 ? "..." : "";
+  const suffix = end < plain.length ? "..." : "";
+  return prefix + plain.slice(start, end).trim() + suffix;
+}
+
+function getGroupedStructure(){
+  const map = new Map();
+  ARTICLES.forEach(article => {
+    const partKey = article.part || "기타";
+    if(!map.has(partKey)){
+      map.set(partKey, { part: partKey, chapters: new Map(), count: 0 });
+    }
+    const part = map.get(partKey);
+    const chapterKey = article.chapter || "기타";
+    if(!part.chapters.has(chapterKey)){
+      part.chapters.set(chapterKey, { chapter: chapterKey, count: 0 });
+    }
+    part.count += 1;
+    part.chapters.get(chapterKey).count += 1;
+  });
+
+  return Array.from(map.values()).map(part => ({
+    ...part,
+    chapters: Array.from(part.chapters.values()).sort((a,b) => a.chapter.localeCompare(b.chapter, 'ko'))
+  })).sort((a,b) => a.part.localeCompare(b.part, 'ko'));
+}
+
+function buildTOC(){
+  const groups = getGroupedStructure();
+  const html = groups.map(group => `
+    <div class="toc-part ${state.selectedPart === group.part ? "open" : ""}">
+      <button type="button" class="toc-part-head" data-part="${escapeHtml(group.part)}">
+        <span class="toc-part-name">${escapeHtml(group.part)}</span>
+        <span class="toc-part-meta">
+          <span>${group.count}조</span>
+          <span class="toc-arrow">▶</span>
+        </span>
+      </button>
+      <div class="toc-chapters">
+        ${group.chapters.map(chapter => `
+          <button type="button" class="toc-chapter ${state.selectedPart === group.part && state.selectedChapter === chapter.chapter ? "active" : ""}" data-part="${escapeHtml(group.part)}" data-chapter="${escapeHtml(chapter.chapter)}">
+            <span class="toc-chapter-name">${escapeHtml(chapter.chapter)}</span>
+            <span class="toc-chapter-count">${chapter.count}조</span>
+          </button>
+        `).join("")}
+      </div>
+    </div>
   `).join("");
 
-  $("#tocList").innerHTML = groups || `<div class="empty-state">검색 결과가 없습니다.</div>`;
+  $("#tocList").innerHTML = html;
 
-  $all(".toc-item").forEach(btn => {
+  $all(".toc-part-head").forEach(btn => {
     btn.addEventListener("click", () => {
-      const el = document.getElementById(btn.dataset.target);
-      if(el) el.scrollIntoView({behavior:"smooth", block:"start"});
+      const part = btn.dataset.part;
+      if(state.selectedPart === part){
+        state.selectedPart = "";
+        state.selectedChapter = "";
+      } else {
+        state.selectedPart = part;
+        state.selectedChapter = "";
+      }
+      buildTOC();
+      renderManual();
+    });
+  });
+
+  $all(".toc-chapter").forEach(btn => {
+    btn.addEventListener("click", () => {
+      state.selectedPart = btn.dataset.part;
+      state.selectedChapter = btn.dataset.chapter;
+      buildTOC();
+      renderManual();
     });
   });
 }
 
-function matchesKeyword(article, keyword){
-  const q = keyword.trim().toLowerCase();
-  if(!q) return true;
-  const haystack = [
+function matchesManual(article){
+  const keywordOk = !currentSearch.trim() || [
     article.part, article.chapter, article.section, article.article_no, article.title, article.full_text
-  ].join(" ").toLowerCase();
-  return haystack.includes(q);
+  ].join(" ").toLowerCase().includes(currentSearch.trim().toLowerCase());
+
+  const partOk = !state.selectedPart || article.part === state.selectedPart;
+  const chapterOk = !state.selectedChapter || article.chapter === state.selectedChapter;
+
+  return keywordOk && partOk && chapterOk;
 }
 
 function renderManual(){
-  const filtered = ARTICLES.filter(article => matchesKeyword(article, currentSearch));
+  const filtered = ARTICLES.filter(matchesManual);
   const host = $("#articleList");
   const tpl = $("#articleTemplate");
-  $("#articleCount").textContent = currentSearch
-    ? `검색 결과 ${filtered.length.toLocaleString()}개 조문`
-    : `전체 ${ARTICLES.length.toLocaleString()}개 조문`;
+
+  const activeScope = [
+    state.selectedPart || null,
+    state.selectedChapter || null
+  ].filter(Boolean).join(" · ");
+
+  if(currentSearch.trim()){
+    $("#articleCount").textContent = `검색 결과 ${filtered.length.toLocaleString()}개 조문`;
+    $("#searchSummary").innerHTML = `<strong>${escapeHtml(currentSearch)}</strong> 검색 결과를 미리보기 카드로 보여줍니다.`;
+  } else if(activeScope){
+    $("#articleCount").textContent = `${activeScope} · ${filtered.length.toLocaleString()}개 조문`;
+    $("#searchSummary").textContent = "목차에서 선택한 범위의 조문을 보여줍니다.";
+  } else {
+    $("#articleCount").textContent = `전체 ${ARTICLES.length.toLocaleString()}개 조문`;
+    $("#searchSummary").textContent = "키워드를 입력하거나 목차에서 편·장을 선택해 조문을 살펴보세요.";
+  }
 
   host.innerHTML = "";
   if(!filtered.length){
-    host.innerHTML = `<div class="card empty-state">입력한 키워드와 일치하는 조문이 없습니다.</div>`;
-    buildTocItems(filtered);
+    host.innerHTML = `<div class="card empty-state">입력한 키워드 또는 선택한 범위와 일치하는 조문이 없습니다.</div>`;
     return;
   }
 
@@ -126,6 +226,7 @@ function renderManual(){
     node.id = article.id;
     node.querySelector(".article-path").textContent = [article.part, article.chapter, article.section].filter(Boolean).join(" · ");
     node.querySelector(".article-title").innerHTML = highlight(article.full_title, currentSearch);
+    node.querySelector(".article-preview").innerHTML = highlight(findPreviewSnippet(article.full_text, currentSearch, 170), currentSearch);
 
     const body = node.querySelector(".article-body");
     article.blocks.forEach(block => {
@@ -140,8 +241,6 @@ function renderManual(){
 
     host.appendChild(node);
   });
-
-  buildTocItems(filtered);
 }
 
 function renderQuizFilters(){
@@ -217,7 +316,6 @@ function makeQuizBatch(){
   const mcqSet = takeRandom(mcqPool, Math.min(10, mcqPool.length));
 
   CURRENT_BATCH = [...oxSet, ...mcqSet];
-
   currentQuizAnswers = 0;
   currentQuizCorrect = 0;
 
@@ -230,6 +328,20 @@ function updateQuizStats(){
   $("#quizSessionLabel").textContent = `현재 세트: OX ${CURRENT_BATCH.filter(q => q.type === "ox").length}문제 + 4지선다 ${CURRENT_BATCH.filter(q => q.type === "mcq").length}문제`;
   $("#quizProgress").textContent = `${currentQuizAnswers} / ${CURRENT_BATCH.length} 완료`;
   $("#quizScore").textContent = `정답 ${currentQuizCorrect}`;
+}
+
+function quizPromptText(item){
+  if(item.type === "ox"){
+    return "아래 문장이 맞는지 판단하세요.";
+  }
+  return "옳은 내용을 고르세요.";
+}
+
+function quizStatementText(item){
+  if(item.type === "ox"){
+    return item.statement || "";
+  }
+  return "";
 }
 
 function renderQuizBatch(){
@@ -246,15 +358,17 @@ function renderQuizBatch(){
     const node = tpl.content.firstElementChild.cloneNode(true);
     node.dataset.index = index;
     node.querySelector(".quiz-type").textContent = item.type === "ox" ? "OX" : "4지선다";
-    node.querySelector(".quiz-meta").textContent = `${item.source_article_no} ${item.source_title ? `· ${item.source_title}` : ""}`;
-    node.querySelector(".quiz-prompt").textContent = item.prompt;
+    node.querySelector(".quiz-meta").textContent = `${item.source_article_no}${item.source_title ? `(${item.source_title})` : ""}`;
+    node.querySelector(".quiz-prompt").textContent = quizPromptText(item);
 
+    const statementHost = node.querySelector(".quiz-statement");
     const optionsHost = node.querySelector(".quiz-options");
     const resultHost = node.querySelector(".quiz-result");
     const sourceHost = node.querySelector(".source-body");
 
     if(item.type === "ox"){
-      [["O", 0], ["X", 1]].forEach(([label, value]) => {
+      statementHost.textContent = quizStatementText(item);
+      [["O", true], ["X", false]].forEach(([label, value]) => {
         const btn = document.createElement("button");
         btn.type = "button";
         btn.className = "option-btn";
@@ -263,6 +377,7 @@ function renderQuizBatch(){
         optionsHost.appendChild(btn);
       });
     } else {
+      statementHost.remove();
       item.choices.forEach((choice, choiceIndex) => {
         const btn = document.createElement("button");
         btn.type = "button";
@@ -285,7 +400,7 @@ function renderQuizBatch(){
 
 function correctAnswerValue(item){
   if(item.type === "ox"){
-    return item.answer_index === 0 ? 0 : 1;
+    return Boolean(item.answer);
   }
   return item.answer_index;
 }
@@ -295,13 +410,18 @@ function lockQuizCard(node, userAnswer, isCorrect){
   const item = CURRENT_BATCH[Number(node.dataset.index)];
   const answerValue = correctAnswerValue(item);
 
-  buttons.forEach((button, idx) => {
+  buttons.forEach(button => {
+    const buttonValue = item.type === "ox"
+      ? button.textContent === "O"
+      : Number(button.textContent.split(".")[0]) - 1;
+
     button.classList.add("locked");
     button.disabled = true;
-    if(idx === answerValue){
+
+    if(buttonValue === answerValue){
       button.classList.add("correct");
     }
-    if(idx === userAnswer && !isCorrect){
+    if(buttonValue === userAnswer && !isCorrect){
       button.classList.add("wrong");
     }
   });
@@ -322,7 +442,7 @@ function handleQuizAnswer(index, userAnswer, node){
   const resultHost = node.querySelector(".quiz-result");
   resultHost.className = `quiz-result ${isCorrect ? "ok" : "bad"}`;
   resultHost.textContent = isCorrect
-    ? "정답입니다. 아래의 정확한 조문으로 바로 확인해 보세요."
+    ? "정답입니다. 아래의 정확한 조문으로 기준 문구를 확인해 보세요."
     : "오답입니다. 아래의 정확한 조문을 열어 기준 문구를 직접 확인해 보세요.";
 
   if(currentQuizAnswers === CURRENT_BATCH.length){
@@ -410,6 +530,7 @@ async function init(){
   MASTER_QUIZ = await quizRes.json();
   enrichData();
   bindEvents();
+  buildTOC();
   renderManual();
   renderQuizFilters();
   makeQuizBatch();
