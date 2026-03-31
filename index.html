@@ -2,42 +2,118 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>MG인재개발원 여신업무방법서 학습 지원</title>
-  <link rel="stylesheet" href="styles.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#1f4fa3" />
+  <title>MG 여신업무방법서 학습앱</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css?v=20260331" />
 </head>
 <body>
+  <div class="app-shell">
+    <header class="hero">
+      <div class="hero__badge">MG 여신업무방법서 · 학습용 웹앱</div>
+      <h1>검색하고, 확인하고, 문제로 익히는 여신업무방법서</h1>
+      <p>
+        키워드 검색, 목차 필터, OX/객관식 문제를 한 화면에서 활용할 수 있도록 구성했습니다.
+      </p>
+    </header>
 
-<header class="top">
-  <h1>
-    MG인재개발원<br/>
-    여신업무방법서 학습 지원
-  </h1>
-  <p class="version">기준: 2026.03 개정</p>
-</header>
+    <main class="main-grid">
+      <section class="card">
+        <div class="section-title-row">
+          <h2>방법서 검색</h2>
+          <button id="openTocBtn" class="ghost-button" type="button">목차 검색</button>
+        </div>
 
-<div class="tabs">
-  <button onclick="setTab('search')" id="tabSearch" class="active">방법서 검색</button>
-  <button onclick="setTab('quiz')" id="tabQuiz">학습용 문제</button>
-</div>
+        <div class="search-panel">
+          <label for="keywordInput" class="label">키워드 입력</label>
+          <div class="search-row">
+            <input
+              id="keywordInput"
+              class="text-input"
+              type="text"
+              placeholder="예: 담보, 연체, 대환, 채권보전"
+              autocomplete="off"
+            />
+            <button id="searchBtn" class="primary-button" type="button">검색</button>
+          </div>
+          <div class="chip-row" id="quickKeywords"></div>
+          <p id="searchMeta" class="helper-text">data.json 기준 전체 조문을 불러옵니다.</p>
+        </div>
 
-<div id="searchTab">
-  <input id="searchInput" placeholder="키워드 입력" />
-  <button onclick="runSearch()">검색</button>
-  <button onclick="openToc()">목차로 찾기</button>
+        <div id="searchResults" class="result-list empty-state">
+          검색어를 입력하면 관련 조문이 표시됩니다.
+        </div>
+      </section>
 
-  <div id="results"></div>
-</div>
+      <section class="card">
+        <div class="section-title-row">
+          <h2>학습용 문제</h2>
+          <button id="nextQuizBtn" class="ghost-button" type="button">다른 문제</button>
+        </div>
 
-<div id="quizTab" style="display:none;">
-  <button onclick="startQuiz()">문제 시작</button>
-  <div id="quizArea"></div>
-</div>
+        <div class="quiz-toolbar">
+          <div class="quiz-toolbar__item">
+            <span class="label">문제 유형</span>
+            <select id="quizTypeSelect" class="select-input">
+              <option value="all">전체</option>
+              <option value="ox">OX</option>
+              <option value="multiple">객관식</option>
+            </select>
+          </div>
+        </div>
 
-<footer>
-주의사항 : 교육용 웹앱으로 업데이트 및 기타세부사항은 직접 엠지니를 활용하시기 바랍니다.
-</footer>
+        <div id="quizContainer" class="quiz-box loading-state">문제를 불러오는 중입니다.</div>
+      </section>
+    </main>
+  </div>
 
-<script src="app.js"></script>
+  <div id="tocModal" class="modal" aria-hidden="true">
+    <div class="modal__backdrop" id="tocBackdrop"></div>
+    <div class="modal__panel" role="dialog" aria-modal="true" aria-labelledby="tocModalTitle">
+      <div class="modal__header">
+        <h2 id="tocModalTitle">목차 검색</h2>
+        <button id="closeTocBtn" class="icon-button" type="button" aria-label="닫기">×</button>
+      </div>
+
+      <div class="modal__body">
+        <div class="toc-grid">
+          <div>
+            <label class="label" for="partSelect">편</label>
+            <select id="partSelect" class="select-input">
+              <option value="">전체 편</option>
+            </select>
+          </div>
+          <div>
+            <label class="label" for="chapterSelect">장</label>
+            <select id="chapterSelect" class="select-input">
+              <option value="">전체 장</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="toc-actions">
+          <button id="applyTocBtn" class="primary-button" type="button">적용</button>
+          <button id="resetTocBtn" class="secondary-button" type="button">초기화</button>
+        </div>
+
+        <p class="helper-text">
+          편/장을 선택하면 해당 범위의 조문만 하단 검색 결과에 표시됩니다.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <template id="searchResultTemplate">
+    <article class="result-card">
+      <div class="result-card__meta"></div>
+      <h3 class="result-card__title"></h3>
+      <p class="result-card__body"></p>
+    </article>
+  </template>
+
+  <script src="app.js?v=20260331"></script>
 </body>
 </html>
