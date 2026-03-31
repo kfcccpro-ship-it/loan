@@ -14,13 +14,10 @@ const state = {
   selectedParts: new Set(),
   selectedChapters: new Set(),
   granularity: 'article',
-  afterOx: 'ox_review',
-  currentQuizType: 'ox',
   currentQuizIndex: 0,
   currentQuizPool: [],
   historyReady: false,
   ignoreNextPop: false,
-  currentStartMode: 'ox',
 };
 
 const els = {};
@@ -97,10 +94,8 @@ function cacheElements() {
     scopeSummary: document.getElementById('scopeSummary'),
     scopeCount: document.getElementById('scopeCount'),
     startQuizBtn: document.getElementById('startQuizBtn'),
-    startDirectMcqBtn: document.getElementById('startDirectMcqBtn'),
     quizStartActions: document.getElementById('quizStartActions'),
     restartOxBtn: document.getElementById('restartOxBtn'),
-    startMcqBtn: document.getElementById('startMcqBtn'),
     quizArea: document.getElementById('quizArea'),
   });
 }
@@ -142,17 +137,10 @@ function bindEvents() {
     els.granularityButtons.forEach(node => node.classList.toggle('active', node === btn));
     syncGranularitySelectors();
   }));
-  els.afterOxButtons.forEach(btn => btn.addEventListener('click', () => {
-    state.afterOx = btn.dataset.after;
-    renderAfterOxChoices();
-  }));
   els.togglePartSelector.addEventListener('click', () => toggleSelector(els.partSelector, els.togglePartSelector));
   els.toggleChapterSelector.addEventListener('click', () => toggleSelector(els.chapterSelector, els.toggleChapterSelector));
-  els.startQuizBtn.addEventListener('click', () => startQuiz('ox'));
-  els.startDirectMcqBtn.addEventListener('click', () => startQuiz('mcq'));
-  renderQuizStartButtons();
-  els.restartOxBtn.addEventListener('click', () => startQuiz('ox'));
-  els.startMcqBtn.addEventListener('click', () => startQuiz('mcq'));
+  els.startQuizBtn.addEventListener('click', () => startQuiz());
+  els.restartOxBtn.addEventListener('click', () => startQuiz());
 }
 
 function showView(name, options = {}) {
@@ -438,18 +426,6 @@ function getScopedArticles() {
   return list;
 }
 
-
-function renderQuizStartButtons() {
-  if (els.startQuizBtn) {
-    els.startQuizBtn.classList.toggle('primary-btn', state.currentStartMode === 'ox');
-    els.startQuizBtn.classList.toggle('secondary-btn', state.currentStartMode !== 'ox');
-  }
-  if (els.startDirectMcqBtn) {
-    els.startDirectMcqBtn.classList.toggle('primary-btn', state.currentStartMode === 'mcq');
-    els.startDirectMcqBtn.classList.toggle('secondary-btn', state.currentStartMode !== 'mcq');
-  }
-}
-
 function updateScopeSummary() {
   const parts = state.selectedParts.size ? `${state.selectedParts.size}개 편 선택` : '전체 편';
   const chapters = state.selectedChapters.size ? `${state.selectedChapters.size}개 장 선택` : '전체 장';
@@ -458,75 +434,45 @@ function updateScopeSummary() {
   els.scopeCount.textContent = scoped.length;
 }
 
-function startQuiz(type) {
-  state.currentStartMode = type;
-  renderQuizStartButtons();
+function startQuiz() {
   const scoped = getScopedArticles();
   if (!scoped.length) {
     els.quizArea.classList.remove('hidden');
     els.quizArea.innerHTML = '<div class="empty-box">출제 가능한 조문이 없습니다.<br>편 또는 장 선택 범위를 다시 확인해 주세요.</div>';
     return;
   }
-  state.currentQuizType = type;
   state.currentQuizIndex = 0;
-  state.currentQuizPool = type === 'ox' ? buildOxQuiz(scoped) : buildMcqQuiz(scoped);
+  state.currentQuizPool = buildOxQuiz(scoped);
   els.quizArea.classList.remove('hidden');
   els.quizStartActions.classList.add('hidden');
-  renderAfterOxChoices();
   renderCurrentQuestion();
   pushAppState();
 }
 
 function buildOxQuiz(scoped) {
   const selected = selectArticlesByGranularity(scoped, 10).filter(isQuizArticleUsable);
-  return selected.map((article, index) => {
-    const validLines = extractValidStatements(article);
-    const articleLine = validLines[0] || article.body;
-    const truthy = index % 2 === 0;
-    let statement = articleLine;
+  const difficultyPlan = shuffle([
+    "easy","easy","easy","easy",
+    "medium","medium","medium","medium",
+    "hard","hard"
+  ]).slice(0, selected.length);
 
-    if (!truthy) {
-      const alternatives = shuffle(scoped.filter(item => item.id !== article.id && isQuizArticleUsable(item)));
-      const alt = alternatives.find(item => extractValidStatements(item).length);
-      if (alt) {
-        statement = extractValidStatements(alt)[0];
-      } else {
-        statement = mutateStatement(articleLine);
-      }
-      if (statement === articleLine) statement = mutateStatement(articleLine);
-    }
+  return selected.map((article, index) => {
+    const base = pickBestStatement(article);
+    const difficulty = difficultyPlan[index] || "medium";
+    const question = buildOxQuestionForDifficulty(base, difficulty);
 
     return {
       kind: 'ox',
-      meta: `${labelGranularity()} OX ${index + 1} / 10`,
+      difficulty,
+      meta: `${labelGranularity()} OX ${index + 1} / ${selected.length}`,
       article,
-      statement,
-      answer: truthy ? 'O' : 'X',
-      explanation: `${article.display_title}
-${cleanQuizBody(article.body)}`,
-    };
-  });
-}
+      statement: question.statement,
+      answer: question.answer,
+      explanation: `정답: ${question.answer}
 
-function buildMcqQuiz(scoped) {
-  const selected = selectArticlesByGranularity(scoped, 10).filter(isQuizArticleUsable);
-  return selected.map((article, index) => {
-    const statements = extractValidStatements(article);
-    const correct = statements[0] || cleanQuizBody(article.body);
-    const options = buildStatementChoices(correct, article, scoped);
-
-    return {
-      kind: 'mcq',
-      meta: `${labelGranularity()} 4지선다 ${index + 1} / 10`,
-      article,
-      prompt: buildMcqPrompt(article, statements),
-      options,
-      answer: correct,
-      explanation: `${article.display_title}
-정답 보기: ${correct}
-
-원문 확인
-${cleanQuizBody(article.body)}`,
+근거 조문: ${article.display_title}
+${base}`,
     };
   });
 }
@@ -552,38 +498,25 @@ function selectArticlesByGranularity(scoped, count) {
 function renderCurrentQuestion() {
   const item = state.currentQuizPool[state.currentQuizIndex];
   if (!item) {
-    els.quizArea.innerHTML = `<div class="empty-box">${state.currentQuizType === 'ox' ? 'OX 10문제를 모두 마쳤습니다.' : '4지선다형 10문제를 모두 마쳤습니다.'}<br>아래 버튼으로 다음 학습을 이어가세요.</div>`;
-    if (state.currentQuizType === 'ox') {
-      els.quizStartActions.classList.remove('hidden');
-    } else {
-      els.quizStartActions.classList.add('hidden');
-    }
+    els.quizArea.innerHTML = `<div class="empty-box">OX 10문제를 모두 마쳤습니다.<br>아래 버튼으로 새 문제를 다시 풀어보세요.</div>`;
+    els.quizStartActions.classList.remove('hidden');
     return;
   }
-  if (item.kind === 'ox') {
-    els.quizArea.innerHTML = `
-      <div class="question-card">
-        <div class="question-meta">${escapeHtml(item.meta)}</div>
-        <div class="question-title">[${escapeHtml(item.article.display_title)}] 다음 설명이 맞으면 O, 틀리면 X를 선택하세요.</div>
-        <div class="question-body">${escapeHtml(item.statement)}</div>
-        <div class="answer-row">
-          <button class="answer-btn" data-answer="O">O</button>
-          <button class="answer-btn" data-answer="X">X</button>
-        </div>
-        <div id="feedback"></div>
-      </div>`;
-    els.quizArea.querySelectorAll('[data-answer]').forEach(node => node.addEventListener('click', () => handleOxAnswer(node, item)));
-  } else {
-    els.quizArea.innerHTML = `
-      <div class="question-card">
-        <div class="question-meta">${escapeHtml(item.meta)}</div>
-        <div class="question-title">[${escapeHtml(item.article.display_title)}] 아래 조문(예문)을 보고 내용과 일치하는 것을 고르세요.</div>
-        <div class="question-body">${escapeHtml(item.prompt)}</div>
-        <div class="choice-list">${item.options.map(option => `<button class="choice-btn" data-choice="${escapeHtml(option)}">${escapeHtml(option)}</button>`).join('')}</div>
-        <div id="feedback"></div>
-      </div>`;
-    els.quizArea.querySelectorAll('[data-choice]').forEach(node => node.addEventListener('click', () => handleMcqAnswer(node, item)));
-  }
+  const info = difficultyInfo(item.difficulty);
+  els.quizArea.innerHTML = `
+    <div class="question-card">
+      <div class="question-meta">${escapeHtml(item.meta)}</div>
+      <div class="difficulty-badge ${info.className}">${escapeHtml(info.label)}</div>
+      <div class="difficulty-desc ${info.className}">${escapeHtml(info.desc)}</div>
+      <div class="question-title">[${escapeHtml(item.article.display_title)}] 아래 설명이 조문 내용과 일치하면 O, 일치하지 않으면 X를 선택하세요.</div>
+      <div class="question-body">${escapeHtml(item.statement)}</div>
+      <div class="answer-row">
+        <button class="answer-btn" data-answer="O">O</button>
+        <button class="answer-btn" data-answer="X">X</button>
+      </div>
+      <div id="feedback"></div>
+    </div>`;
+  els.quizArea.querySelectorAll('[data-answer]').forEach(node => node.addEventListener('click', () => handleOxAnswer(node, item)));
 }
 
 function handleOxAnswer(button, item) {
@@ -592,17 +525,6 @@ function handleOxAnswer(button, item) {
   buttons.forEach(node => node.disabled = true);
   buttons.forEach(node => {
     if (node.dataset.answer === item.answer) node.classList.add('correct');
-    else if (node === button) node.classList.add('wrong');
-  });
-  showFeedback(chosen === item.answer, item.explanation);
-}
-
-function handleMcqAnswer(button, item) {
-  const chosen = button.dataset.choice;
-  const buttons = [...els.quizArea.querySelectorAll('[data-choice]')];
-  buttons.forEach(node => node.disabled = true);
-  buttons.forEach(node => {
-    if (node.dataset.choice === item.answer) node.classList.add('correct');
     else if (node === button) node.classList.add('wrong');
   });
   showFeedback(chosen === item.answer, item.explanation);
@@ -620,15 +542,6 @@ function showFeedback(correct, explanation) {
 }
 
 
-function renderAfterOxChoices() {
-  if (!els.afterOxButtons.length) return;
-  els.afterOxButtons.forEach(btn => btn.classList.toggle('active', btn.dataset.after === state.afterOx));
-  if (els.restartOxBtn) els.restartOxBtn.classList.toggle('primary-btn', state.afterOx === 'ox_review');
-  if (els.restartOxBtn) els.restartOxBtn.classList.toggle('secondary-btn', state.afterOx !== 'ox_review');
-  if (els.startMcqBtn) els.startMcqBtn.classList.toggle('primary-btn', state.afterOx === 'multiple_choice');
-  if (els.startMcqBtn) els.startMcqBtn.classList.toggle('secondary-btn', state.afterOx !== 'multiple_choice');
-}
-
 function buildAppState() {
   return {
     app: true,
@@ -636,7 +549,6 @@ function buildAppState() {
     pane: state.currentPane,
     modal: !els.articleModal.classList.contains('hidden') ? 'article' : !els.settingsModal.classList.contains('hidden') ? 'settings' : null,
     quizActive: !els.quizArea.classList.contains('hidden'),
-    quizType: state.currentQuizType,
     quizIndex: state.currentQuizIndex,
   };
 }
@@ -690,6 +602,104 @@ function goBackInsideApp(fallback = 'home') {
     return;
   }
   showView(fallback);
+}
+
+
+function difficultyInfo(level) {
+  if (level === 'easy') return { label: '쉬움', desc: '금고직원이면 반드시 맞춰야 할 문제', className: 'easy' };
+  if (level === 'hard') return { label: '어려움', desc: '조금 더 많이 생각해볼 문제', className: 'hard' };
+  return { label: '중간', desc: '조금 생각해볼 문제', className: 'medium' };
+}
+
+function pickBestStatement(article) {
+  const lines = extractValidStatements(article);
+  const preferred = lines.find(line => !/다음 각 호|다음 각 목|별지|별표/.test(line));
+  return preferred || lines[0] || cleanQuizBody(article.body);
+}
+
+function buildOxQuestionForDifficulty(base, difficulty) {
+  const normalized = base.trim();
+  const truthFirst = Math.random() < 0.5;
+  if (difficulty === 'easy') {
+    return truthFirst
+      ? { statement: normalized, answer: 'O' }
+      : { statement: mutateSimple(normalized), answer: 'X' };
+  }
+  if (difficulty === 'hard') {
+    return truthFirst
+      ? { statement: mutateHardTrue(normalized), answer: 'O' }
+      : { statement: mutateHardFalse(normalized), answer: 'X' };
+  }
+  return truthFirst
+    ? { statement: mutateMediumTrue(normalized), answer: 'O' }
+    : { statement: mutateMediumFalse(normalized), answer: 'X' };
+}
+
+function mutateSimple(line) {
+  let t = line;
+  const swaps = [
+    ['할 수 있다', '할 수 없다'],
+    ['하여야 한다', '하지 않아도 된다'],
+    ['아니한다', '한다'],
+    ['금지한다', '허용한다'],
+    ['포함한다', '포함하지 않는다'],
+    ['가능하다', '불가능하다'],
+    ['원칙으로 한다', '원칙으로 하지 않는다'],
+    ['있다', '없다'],
+    ['한다', '하지 않는다'],
+  ];
+  for (const [a,b] of swaps) {
+    if (t.includes(a)) return t.replace(a,b);
+  }
+  return t + ' 다만 예외 없이 적용된다.';
+}
+
+function mutateMediumTrue(line) {
+  let t = line;
+  t = t.replace(/\s+/g, ' ');
+  t = t.replace(/원칙으로 하되/g, '원칙으로 하되');
+  t = t.replace(/다만,/g, '다만,');
+  return t;
+}
+
+function mutateMediumFalse(line) {
+  let t = line;
+  const swaps = [
+    ['원칙으로', '예외적으로'],
+    ['채무자', '보증인'],
+    ['금고', '중앙회'],
+    ['이사장', '직원'],
+    ['할 수 있다', '하여야 한다'],
+    ['하여야 한다', '할 수 있다'],
+    ['포함한다', '제외한다'],
+    ['제외한다', '포함한다'],
+    ['월마다', '연 1회만'],
+    ['1년', '3년'],
+    ['5년', '10년'],
+  ];
+  for (const [a,b] of swaps) {
+    if (t.includes(a)) return t.replace(a,b);
+  }
+  if (t.includes('일부')) return t.replace('일부', '전부');
+  return '모든 경우에 ' + t.replace(/^원칙적으로\s*/, '');
+}
+
+function mutateHardTrue(line) {
+  let t = line;
+  if (!/[.]$/.test(t)) t += '.';
+  return '다음 설명은 조문 취지에 맞는 내용입니다. ' + t;
+}
+
+function mutateHardFalse(line) {
+  let t = line;
+  if (t.includes('원칙으로')) return t.replace('원칙으로', '예외 없이');
+  if (t.includes('할 수 있다')) return t.replace('할 수 있다', '하여야만 한다');
+  if (t.includes('다만')) return t.replace('다만', '예외 없이');
+  if (t.includes('포함하지 않는다')) return t.replace('포함하지 않는다', '포함한다');
+  if (t.includes('이내')) return t.replace('이내', '이상');
+  if (t.includes('이상')) return t.replace('이상', '이하');
+  if (t.includes('또는')) return t.replace('또는', '그리고');
+  return '조문과 달리, ' + t.replace(/원칙적으로\s*/, '모든 경우 ');
 }
 
 function labelGranularity() {
@@ -746,106 +756,6 @@ function mutateStatement(line) {
   if (line.includes('한다')) return line.replace('한다', '하지 않는다');
   if (line.includes('있다')) return line.replace('있다', '없다');
   return line + ' 아니다.';
-}
-
-function buildMcqPrompt(article, statements) {
-  const lines = statements.slice(0, 2);
-  const excerpt = lines.length ? lines.join(' ') : cleanQuizBody(article.body);
-  return excerpt;
-}
-
-function buildStatementChoices(correct, article, scoped) {
-  const candidates = [];
-  const add = value => {
-    const normalized = normalizeChoice(value);
-    if (!normalized || normalized === normalizeChoice(correct)) return;
-    if (!/[가-힣]/.test(normalized)) return;
-    if (normalized.length < 12) return;
-    if (!candidates.some(item => normalizeChoice(item) === normalized)) candidates.push(value.trim());
-  };
-
-  add(mutateStatementVariant(correct, 0));
-  add(mutateStatementVariant(correct, 1));
-  add(mutateStatementVariant(correct, 2));
-  add(mutateStatementVariant(correct, 3));
-
-  const siblingLines = shuffle(extractValidStatements(article).filter(line => normalizeChoice(line) !== normalizeChoice(correct)));
-  siblingLines.forEach(add);
-
-  const scopedLines = shuffle(scoped
-    .filter(item => item.id !== article.id)
-    .flatMap(item => extractValidStatements(item).slice(0, 1)));
-  scopedLines.forEach(add);
-
-  const finalChoices = [correct, ...candidates.slice(0, 3)];
-  return shuffle(finalChoices).slice(0, 4);
-}
-
-function normalizeChoice(text) {
-  return String(text || '').replace(/\s+/g, ' ').trim();
-}
-
-function mutateStatementVariant(line, variant = 0) {
-  let value = String(line || '').trim();
-  if (!value) return value;
-
-  const replacers = [
-    [
-      ['하여야 한다', '할 수 있다'],
-      ['할 수 있다', '하여야 한다'],
-      ['할 수 없다', '할 수 있다'],
-      ['아니한다', '한다'],
-      ['한다', '하지 않는다'],
-      ['있다', '없다'],
-      ['포함한다', '포함하지 않는다'],
-      ['제외한다', '포함한다'],
-      ['원칙으로 한다', '원칙으로 하지 않는다'],
-      ['말한다', '말하지 않는다'],
-    ],
-    [
-      ['금고', '중앙회'],
-      ['채무자', '보증인'],
-      ['보증인', '채무자'],
-      ['담보', '보증'],
-      ['보증', '담보'],
-      ['대출', '예탁금'],
-      ['예탁금', '대출'],
-      ['가계자금', '기업자금'],
-      ['기업자금', '가계자금'],
-      ['이사장', '채무자'],
-      ['신규대출', '기한연장'],
-      ['기한연장', '신규대출'],
-    ],
-    [
-      ['초과할 수 없다', '초과할 수 있다'],
-      ['이내', '초과'],
-      ['이상', '미만'],
-      ['미만', '이상'],
-      ['이내로 한다', '초과로 한다'],
-      ['적용한다', '적용하지 않는다'],
-      ['받는다', '받지 않는다'],
-    ],
-    [
-      ['다만,', '그리고,'],
-      ['원칙으로', '예외적으로'],
-      ['예외로', '원칙으로'],
-      ['가능하다', '불가능하다'],
-      ['금지', '허용'],
-      ['허용', '금지'],
-    ],
-  ];
-
-  for (const pair of replacers[variant % replacers.length]) {
-    if (value.includes(pair[0])) return value.replace(pair[0], pair[1]);
-  }
-
-  value = tweakFirstNumber(value, variant + 1);
-  if (value !== line) return value;
-  return mutateStatement(value);
-}
-
-function tweakFirstNumber(text, delta = 1) {
-  return String(text).replace(/(\d+)/, (match, num) => String(Number(num) + delta));
 }
 
 function uniqueValues(items) {
