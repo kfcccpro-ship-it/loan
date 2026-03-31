@@ -20,6 +20,7 @@ const state = {
   currentQuizPool: [],
   historyReady: false,
   ignoreNextPop: false,
+  currentStartMode: 'ox',
 };
 
 const els = {};
@@ -149,6 +150,7 @@ function bindEvents() {
   els.toggleChapterSelector.addEventListener('click', () => toggleSelector(els.chapterSelector, els.toggleChapterSelector));
   els.startQuizBtn.addEventListener('click', () => startQuiz('ox'));
   els.startDirectMcqBtn.addEventListener('click', () => startQuiz('mcq'));
+  renderQuizStartButtons();
   els.restartOxBtn.addEventListener('click', () => startQuiz('ox'));
   els.startMcqBtn.addEventListener('click', () => startQuiz('mcq'));
 }
@@ -436,6 +438,18 @@ function getScopedArticles() {
   return list;
 }
 
+
+function renderQuizStartButtons() {
+  if (els.startQuizBtn) {
+    els.startQuizBtn.classList.toggle('primary-btn', state.currentStartMode === 'ox');
+    els.startQuizBtn.classList.toggle('secondary-btn', state.currentStartMode !== 'ox');
+  }
+  if (els.startDirectMcqBtn) {
+    els.startDirectMcqBtn.classList.toggle('primary-btn', state.currentStartMode === 'mcq');
+    els.startDirectMcqBtn.classList.toggle('secondary-btn', state.currentStartMode !== 'mcq');
+  }
+}
+
 function updateScopeSummary() {
   const parts = state.selectedParts.size ? `${state.selectedParts.size}개 편 선택` : '전체 편';
   const chapters = state.selectedChapters.size ? `${state.selectedChapters.size}개 장 선택` : '전체 장';
@@ -445,6 +459,8 @@ function updateScopeSummary() {
 }
 
 function startQuiz(type) {
+  state.currentStartMode = type;
+  renderQuizStartButtons();
   const scoped = getScopedArticles();
   if (!scoped.length) {
     els.quizArea.classList.remove('hidden');

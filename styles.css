@@ -319,3 +319,17 @@ body { background: #f6f8fb; }
 .quiz-start-grid { display: grid; grid-template-columns: 1fr; gap: 10px; margin-top: 14px; }
 .start-btn { margin-top: 0; }
 @media (min-width: 560px) { .quiz-start-grid { grid-template-columns: 1fr 1fr; } }
+
+.hero-title { font-size: 32px; font-weight: 800; line-height: 1.2; }
+.hero-title .hero-line { display: block; }
+.hero-title .hero-line-main { font-size: 1em; font-weight: 800; }
+.hero-title .hero-line-sub { font-size: 0.82em; font-weight: 750; }
+.hero-title .hero-line-note { margin-top: 10px; font-size: 0.42em; font-weight: 700; opacity: 0.94; }
+.quiz-start-grid .secondary-btn { margin-top: 0; }
+.quiz-start-grid .primary-btn { margin-top: 0; }
+@media (max-width: 640px) {
+  .hero-badge { font-size: 24px; }
+  .hero-title .hero-line-main { font-size: 1em; }
+  .hero-title .hero-line-sub { font-size: 0.8em; }
+  .hero-title .hero-line-note { font-size: 0.46em; }
+}
