@@ -394,3 +394,44 @@ body { background: #f6f8fb; }
   .answer-btn { font-size: 20px; padding: 18px; }
   .explanation { font-size: 16px; line-height: 1.9; }
 }
+
+
+.quiz-guide-once {
+  margin-bottom: 12px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: #f4f7fb;
+  color: var(--text-secondary);
+  font-size: 16px;
+  line-height: 1.7;
+  text-align: center;
+  font-weight: 700;
+}
+.source-btn {
+  width: 100%;
+  margin-top: 12px;
+}
+.source-panel {
+  margin-top: 12px;
+  padding: 16px;
+  border: 1px solid var(--border-default);
+  border-radius: 16px;
+  background: #fff;
+}
+.source-title {
+  font-size: 18px;
+  font-weight: 800;
+  margin-bottom: 6px;
+}
+.source-meta {
+  font-size: 13px;
+  color: var(--text-tertiary);
+  margin-bottom: 10px;
+}
+.source-body {
+  white-space: pre-wrap;
+  word-break: keep-all;
+  line-height: 1.8;
+  font-size: 16px;
+  color: var(--text-primary);
+}
