@@ -381,23 +381,28 @@ function applyFontSize(size) {
 
 function renderSelectors() {
   els.partSelector.innerHTML = state.data.parts.filter(part => part !== '부칙').map(part => `
-    <label class="selector-item"><input type="checkbox" value="${escapeHtml(part)}" data-part> ${escapeHtml(part)}</label>`).join('');
+    <label class="selector-item"><input type="checkbox" value="${escapeHtml(part)}" data-part data-raw-value="${encodeURIComponent(part)}"> ${escapeHtml(part)}</label>`).join('');
 
   const chapters = Object.entries(state.data.chapters)
     .filter(([part]) => part !== '부칙')
     .flatMap(([, list]) => list)
     .filter((value, index, array) => array.indexOf(value) === index);
   els.chapterSelector.innerHTML = chapters.map(chapter => `
-    <label class="selector-item"><input type="checkbox" value="${escapeHtml(chapter)}" data-chapter> ${escapeHtml(chapter)}</label>`).join('');
+    <label class="selector-item"><input type="checkbox" value="${escapeHtml(chapter)}" data-chapter data-raw-value="${encodeURIComponent(chapter)}"> ${escapeHtml(chapter)}</label>`).join('');
 
   els.partSelector.querySelectorAll('[data-part]').forEach(node => node.addEventListener('change', () => {
-    if (node.checked) state.selectedParts.add(node.value); else state.selectedParts.delete(node.value);
+    collectSelectorState();
     updateScopeSummary();
   }));
   els.chapterSelector.querySelectorAll('[data-chapter]').forEach(node => node.addEventListener('change', () => {
-    if (node.checked) state.selectedChapters.add(node.value); else state.selectedChapters.delete(node.value);
+    collectSelectorState();
     updateScopeSummary();
   }));
+}
+
+function collectSelectorState() {
+  state.selectedParts = new Set([...els.partSelector.querySelectorAll('[data-part]:checked')].map(node => decodeURIComponent(node.dataset.rawValue || '')));
+  state.selectedChapters = new Set([...els.chapterSelector.querySelectorAll('[data-chapter]:checked')].map(node => decodeURIComponent(node.dataset.rawValue || '')));
 }
 
 function toggleSelector(node, button, forceOpen = null) {
@@ -417,16 +422,30 @@ function syncGranularitySelectors() {
     toggleSelector(els.partSelector, els.togglePartSelector, false);
     toggleSelector(els.chapterSelector, els.toggleChapterSelector, false);
   }
+  updateScopeSummary();
 }
 
 function getScopedArticles() {
+  collectSelectorState();
   let list = (state.quizArticles || []).slice();
-  if (state.selectedParts.size) list = list.filter(article => state.selectedParts.has(article.part));
-  if (state.selectedChapters.size) list = list.filter(article => state.selectedChapters.has(article.chapter));
+
+  if (state.granularity === 'part') {
+    return state.selectedParts.size
+      ? list.filter(article => state.selectedParts.has(article.part))
+      : list;
+  }
+
+  if (state.granularity === 'chapter') {
+    return state.selectedChapters.size
+      ? list.filter(article => state.selectedChapters.has(article.chapter))
+      : list;
+  }
+
   return list;
 }
 
 function updateScopeSummary() {
+  collectSelectorState();
   const parts = state.selectedParts.size ? `${state.selectedParts.size}개 편 선택` : '전체 편';
   const chapters = state.selectedChapters.size ? `${state.selectedChapters.size}개 장 선택` : '전체 장';
   const scoped = getScopedArticles();
@@ -435,6 +454,7 @@ function updateScopeSummary() {
 }
 
 function startQuiz() {
+  collectSelectorState();
   const scoped = getScopedArticles();
   if (!scoped.length) {
     els.quizArea.classList.remove('hidden');
