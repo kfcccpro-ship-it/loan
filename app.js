@@ -18,6 +18,8 @@ const state = {
   currentQuizType: 'ox',
   currentQuizIndex: 0,
   currentQuizPool: [],
+  historyReady: false,
+  ignoreNextPop: false,
 };
 
 const els = {};
@@ -28,6 +30,7 @@ async function init() {
   cacheElements();
   bindEvents();
   applyFontSize(loadJson(storage.fontSize, 'normal'));
+  setupHistory();
   renderQuickRecent();
 
   try {
@@ -42,6 +45,8 @@ async function init() {
     updateScopeSummary();
     els.loading.classList.add('hidden');
     els.homeView.classList.remove('hidden');
+    showView('home', { pushHistory: false });
+    replaceInitialHistory();
   } catch (error) {
     els.loading.innerHTML = '<div>데이터를 불러오지 못했습니다.<br>data.json 파일을 확인해 주세요.</div>';
     console.error(error);
@@ -100,8 +105,8 @@ function cacheElements() {
 function bindEvents() {
   els.goSearch.addEventListener('click', () => showView('search'));
   els.goQuiz.addEventListener('click', () => showView('quiz'));
-  els.searchBackBtn.addEventListener('click', () => showView('home'));
-  els.quizBackBtn.addEventListener('click', () => showView('home'));
+  els.searchBackBtn.addEventListener('click', () => goBackInsideApp('home'));
+  els.quizBackBtn.addEventListener('click', () => goBackInsideApp('home'));
 
   els.searchInput.addEventListener('input', handleSearchInput);
   els.searchInput.addEventListener('keydown', event => {
@@ -115,14 +120,14 @@ function bindEvents() {
 
   els.navBtns.forEach(btn => btn.addEventListener('click', () => switchSearchPane(btn.dataset.pane)));
 
-  els.closeArticleModal.addEventListener('click', closeArticleModal);
+  els.closeArticleModal.addEventListener('click', () => closeArticleModal({ pushHistory: true }));
   els.articleModal.addEventListener('click', event => {
-    if (event.target === els.articleModal) closeArticleModal();
+    if (event.target === els.articleModal) closeArticleModal({ pushHistory: true });
   });
   els.bookmarkToggleBtn.addEventListener('click', toggleCurrentBookmark);
 
-  els.openSettingsBtn.addEventListener('click', () => els.settingsModal.classList.remove('hidden'));
-  els.closeSettingsBtn.addEventListener('click', () => els.settingsModal.classList.add('hidden'));
+  els.openSettingsBtn.addEventListener('click', () => { els.settingsModal.classList.remove('hidden'); pushAppState(); });
+  els.closeSettingsBtn.addEventListener('click', () => { els.settingsModal.classList.add('hidden'); pushAppState(); });
   els.fsBtns.forEach(btn => btn.addEventListener('click', () => {
     els.fsBtns.forEach(node => node.classList.toggle('active', node === btn));
     applyFontSize(btn.dataset.fontsize);
@@ -132,10 +137,11 @@ function bindEvents() {
   els.granularityButtons.forEach(btn => btn.addEventListener('click', () => {
     state.granularity = btn.dataset.granularity;
     els.granularityButtons.forEach(node => node.classList.toggle('active', node === btn));
+    syncGranularitySelectors();
   }));
   els.afterOxButtons.forEach(btn => btn.addEventListener('click', () => {
     state.afterOx = btn.dataset.after;
-    els.afterOxButtons.forEach(node => node.classList.toggle('active', node === btn));
+    renderAfterOxChoices();
   }));
   els.togglePartSelector.addEventListener('click', () => toggleSelector(els.partSelector, els.togglePartSelector));
   els.toggleChapterSelector.addEventListener('click', () => toggleSelector(els.chapterSelector, els.toggleChapterSelector));
@@ -144,20 +150,25 @@ function bindEvents() {
   els.startMcqBtn.addEventListener('click', () => startQuiz('mcq'));
 }
 
-function showView(name) {
+function showView(name, options = {}) {
+  const { pushHistory = true } = options;
   els.homeView.classList.toggle('hidden', name !== 'home');
   els.searchView.classList.toggle('hidden', name !== 'search');
   els.quizView.classList.toggle('hidden', name !== 'quiz');
-  if (name === 'search') switchSearchPane(state.currentPane);
+  state.currentView = name;
+  if (name === 'search') switchSearchPane(state.currentPane, { pushHistory: false });
   if (name === 'quiz') updateScopeSummary();
+  if (pushHistory) pushAppState();
 }
 
-function switchSearchPane(pane) {
+function switchSearchPane(pane, options = {}) {
+  const { pushHistory = true } = options;
   state.currentPane = pane;
   Object.entries(els.panes).forEach(([name, node]) => node.classList.toggle('hidden', name !== pane));
   els.navBtns.forEach(btn => btn.classList.toggle('active', btn.dataset.pane === pane));
   if (pane === 'toc') renderToc();
   if (pane === 'bookmark') renderBookmarks();
+  if (pushHistory && state.currentView === 'search') pushAppState();
   window.scrollTo(0, 0);
 }
 
@@ -308,7 +319,8 @@ function renderBookmarks() {
   els.bookmarkList.querySelectorAll('[data-open-bookmark]').forEach(node => node.addEventListener('click', () => openArticle(Number(node.dataset.openBookmark))));
 }
 
-function openArticle(id) {
+function openArticle(id, options = {}) {
+  const { pushHistory = true } = options;
   const article = state.articles.find(item => item.id === id);
   if (!article) return;
   state.currentArticleId = id;
@@ -320,11 +332,14 @@ function openArticle(id) {
   syncBookmarkButton();
   els.articleModal.classList.remove('hidden');
   document.body.style.overflow = 'hidden';
+  if (pushHistory) pushAppState();
 }
 
-function closeArticleModal() {
+function closeArticleModal(options = {}) {
+  const { pushHistory = false } = options;
   els.articleModal.classList.add('hidden');
   document.body.style.overflow = '';
+  if (pushHistory) pushAppState();
 }
 
 function syncBookmarkButton() {
@@ -392,9 +407,23 @@ function renderSelectors() {
   }));
 }
 
-function toggleSelector(node, button) {
-  node.classList.toggle('hidden');
-  button.textContent = node.classList.contains('hidden') ? '열기' : '닫기';
+function toggleSelector(node, button, forceOpen = null) {
+  const open = forceOpen === null ? node.classList.contains('hidden') : forceOpen;
+  node.classList.toggle('hidden', !open);
+  button.textContent = open ? '닫기' : '열기';
+}
+
+function syncGranularitySelectors() {
+  if (state.granularity === 'chapter') {
+    toggleSelector(els.chapterSelector, els.toggleChapterSelector, true);
+    toggleSelector(els.partSelector, els.togglePartSelector, false);
+  } else if (state.granularity === 'part') {
+    toggleSelector(els.partSelector, els.togglePartSelector, true);
+    toggleSelector(els.chapterSelector, els.toggleChapterSelector, false);
+  } else {
+    toggleSelector(els.partSelector, els.togglePartSelector, false);
+    toggleSelector(els.chapterSelector, els.toggleChapterSelector, false);
+  }
 }
 
 function getScopedArticles() {
@@ -424,7 +453,9 @@ function startQuiz(type) {
   state.currentQuizPool = type === 'ox' ? buildOxQuiz(scoped) : buildMcqQuiz(scoped);
   els.quizArea.classList.remove('hidden');
   els.quizStartActions.classList.add('hidden');
+  renderAfterOxChoices();
   renderCurrentQuestion();
+  pushAppState();
 }
 
 function buildOxQuiz(scoped) {
@@ -492,7 +523,11 @@ function renderCurrentQuestion() {
   const item = state.currentQuizPool[state.currentQuizIndex];
   if (!item) {
     els.quizArea.innerHTML = `<div class="empty-box">${state.currentQuizType === 'ox' ? 'OX 10문제를 모두 마쳤습니다.' : '4지선다형 10문제를 모두 마쳤습니다.'}<br>아래 버튼으로 다음 학습을 이어가세요.</div>`;
-    els.quizStartActions.classList.remove('hidden');
+    if (state.currentQuizType === 'ox') {
+      els.quizStartActions.classList.remove('hidden');
+    } else {
+      els.quizStartActions.classList.add('hidden');
+    }
     return;
   }
   if (item.kind === 'ox') {
@@ -552,6 +587,79 @@ function showFeedback(correct, explanation) {
     state.currentQuizIndex += 1;
     renderCurrentQuestion();
   });
+}
+
+
+function renderAfterOxChoices() {
+  if (!els.afterOxButtons.length) return;
+  els.afterOxButtons.forEach(btn => btn.classList.toggle('active', btn.dataset.after === state.afterOx));
+  if (els.restartOxBtn) els.restartOxBtn.classList.toggle('primary-btn', state.afterOx === 'ox_review');
+  if (els.restartOxBtn) els.restartOxBtn.classList.toggle('secondary-btn', state.afterOx !== 'ox_review');
+  if (els.startMcqBtn) els.startMcqBtn.classList.toggle('primary-btn', state.afterOx === 'multiple_choice');
+  if (els.startMcqBtn) els.startMcqBtn.classList.toggle('secondary-btn', state.afterOx !== 'multiple_choice');
+}
+
+function buildAppState() {
+  return {
+    app: true,
+    view: state.currentView || (els.quizView.classList.contains('hidden') ? (els.searchView.classList.contains('hidden') ? 'home' : 'search') : 'quiz'),
+    pane: state.currentPane,
+    modal: !els.articleModal.classList.contains('hidden') ? 'article' : !els.settingsModal.classList.contains('hidden') ? 'settings' : null,
+    quizActive: !els.quizArea.classList.contains('hidden'),
+    quizType: state.currentQuizType,
+    quizIndex: state.currentQuizIndex,
+  };
+}
+
+function pushAppState() {
+  if (!state.historyReady) return;
+  const snapshot = buildAppState();
+  history.pushState(snapshot, '', window.location.href);
+}
+
+function replaceInitialHistory() {
+  const snapshot = buildAppState();
+  history.replaceState(snapshot, '', window.location.href);
+  history.pushState({ ...snapshot, sentinel: true }, '', window.location.href);
+}
+
+function setupHistory() {
+  state.historyReady = true;
+  window.addEventListener('popstate', event => {
+    const snapshot = event.state;
+    if (!snapshot || !snapshot.app) {
+      history.pushState(buildAppState(), '', window.location.href);
+      return;
+    }
+    applyHistoryState(snapshot);
+    if (snapshot.sentinel) {
+      history.pushState(buildAppState(), '', window.location.href);
+    }
+  });
+}
+
+function applyHistoryState(snapshot) {
+  if (snapshot.modal === 'article' && state.currentArticleId) {
+    openArticle(state.currentArticleId, { pushHistory: false });
+    return;
+  }
+  if (snapshot.modal === 'settings') {
+    els.settingsModal.classList.remove('hidden');
+  } else {
+    els.settingsModal.classList.add('hidden');
+    closeArticleModal({ pushHistory: false });
+  }
+  showView(snapshot.view || 'home', { pushHistory: false });
+  if ((snapshot.view || 'home') === 'search') switchSearchPane(snapshot.pane || 'search', { pushHistory: false });
+}
+
+function goBackInsideApp(fallback = 'home') {
+  const current = history.state;
+  if (current && current.app) {
+    history.back();
+    return;
+  }
+  showView(fallback);
 }
 
 function labelGranularity() {
