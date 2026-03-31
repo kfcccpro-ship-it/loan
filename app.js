@@ -528,7 +528,8 @@ function renderCurrentQuestion() {
       <div class="question-meta">${escapeHtml(item.meta)}</div>
       <div class="difficulty-badge ${info.className}">${escapeHtml(info.label)}</div>
       <div class="difficulty-desc ${info.className}">${escapeHtml(info.desc)}</div>
-      <div class="question-title">[${escapeHtml(item.article.display_title)}] 아래 설명이 조문 내용과 일치하면 O, 일치하지 않으면 X를 선택하세요.</div>
+      ${state.currentQuizIndex === 0 ? '<div class="quiz-guide-once">OX 문제입니다. 문장이 맞으면 O, 틀리면 X를 선택하세요.</div>' : ''}
+      <div class="question-title">[${escapeHtml(item.article.display_title)}]</div>
       <div class="question-body">${escapeHtml(item.statement)}</div>
       <div class="answer-row">
         <button class="answer-btn" data-answer="O">O</button>
@@ -552,9 +553,24 @@ function handleOxAnswer(button, item) {
 
 function showFeedback(correct, explanation) {
   const feedback = document.getElementById('feedback');
+  const item = state.currentQuizPool[state.currentQuizIndex];
   feedback.innerHTML = `
-    <div class="explanation"><strong>${correct ? '정답입니다.' : '오답입니다.'}</strong>\n\n${escapeHtml(explanation)}</div>
+    <div class="explanation"><strong>${correct ? '정답입니다.' : '오답입니다.'}</strong>
+
+${escapeHtml(explanation)}</div>
+    <button id="toggleSourceBtn" class="secondary-btn source-btn">조문 원문 보기</button>
+    <div id="sourcePanel" class="source-panel hidden">
+      <div class="source-title">${escapeHtml(item.article.display_title)}</div>
+      <div class="source-meta">${escapeHtml(item.article.part)} · ${escapeHtml(item.article.chapter)}</div>
+      <div class="source-body">${escapeHtml(item.article.body)}</div>
+    </div>
     <button id="nextQuestionBtn" class="primary-btn">다음 문제</button>`;
+  document.getElementById('toggleSourceBtn').addEventListener('click', () => {
+    const panel = document.getElementById('sourcePanel');
+    const btn = document.getElementById('toggleSourceBtn');
+    const isHidden = panel.classList.toggle('hidden');
+    btn.textContent = isHidden ? '조문 원문 보기' : '조문 원문 닫기';
+  });
   document.getElementById('nextQuestionBtn').addEventListener('click', () => {
     state.currentQuizIndex += 1;
     renderCurrentQuestion();
