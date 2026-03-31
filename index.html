@@ -2,180 +2,42 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta name="theme-color" content="#2563eb" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>MG인재개발원 여신업무방법서 학습 지원</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <header class="topbar">
-    <div class="hero">
-      <h1 class="app-title">
-        <span>MG인재개발원</span>
-        <span>여신업무방법서 학습 지원</span>
-      </h1>
-      <p class="manual-version">현재 기준 업무방법서 버전: <strong>2026.03.12</strong> 개정본</p>
-    </div>
-  </header>
 
-  <nav class="tabs" aria-label="주요 기능">
-    <button class="tab active" data-tab="manual">방법서 검색</button>
-    <button class="tab" data-tab="quiz">학습용 문제</button>
-  </nav>
+<header class="top">
+  <h1>
+    MG인재개발원<br/>
+    여신업무방법서 학습 지원
+  </h1>
+  <p class="version">기준: 2026.03 개정</p>
+</header>
 
-  <main class="layout">
-    <section id="manualTab" class="tab-panel active">
-      <section class="card search-card">
-        <div class="card-header">
-          <div>
-            <h2>방법서 검색</h2>
-            <p>키워드로 조문 내용을 바로 찾고, 목차에서 편·장을 선택해 빠르게 이동할 수 있습니다.</p>
-          </div>
-        </div>
+<div class="tabs">
+  <button onclick="setTab('search')" id="tabSearch" class="active">방법서 검색</button>
+  <button onclick="setTab('quiz')" id="tabQuiz">학습용 문제</button>
+</div>
 
-        <div class="search-row">
-          <input id="searchInput" type="search" placeholder="예: 동일인, 중도상환수수료, 금리인하" />
-          <button id="clearSearchBtn" class="ghost-btn" type="button">초기화</button>
-        </div>
+<div id="searchTab">
+  <input id="searchInput" placeholder="키워드 입력" />
+  <button onclick="runSearch()">검색</button>
+  <button onclick="openToc()">목차로 찾기</button>
 
-        <div class="search-help">
-          <span id="articleCount" class="count-text"></span>
-          <span id="searchSummary" class="hint">키워드를 입력하면 관련 조문이 미리보기 카드로 정리됩니다.</span>
-        </div>
-      </section>
+  <div id="results"></div>
+</div>
 
-      <section class="manual-layout">
-        <aside class="toc card">
-          <div class="toc-head">
-            <div>
-              <h3>목차</h3>
-              <p>편을 펼친 뒤 장을 선택하면 해당 조문만 바로 볼 수 있습니다.</p>
-            </div>
-          </div>
-          <div id="tocList" class="toc-list"></div>
-        </aside>
+<div id="quizTab" style="display:none;">
+  <button onclick="startQuiz()">문제 시작</button>
+  <div id="quizArea"></div>
+</div>
 
-        <section class="content">
-          <div id="articleList" class="article-list"></div>
-        </section>
-      </section>
-    </section>
+<footer>
+주의사항 : 교육용 웹앱으로 업데이트 및 기타세부사항은 직접 엠지니를 활용하시기 바랍니다.
+</footer>
 
-    <section id="quizTab" class="tab-panel">
-      <section class="card quiz-hero">
-        <div class="card-header">
-          <div>
-            <h2>학습용 문제</h2>
-            <p>먼저 범위를 정하고, 기본 세팅인 OX 10문제와 4지선다 10문제로 학습합니다.</p>
-          </div>
-        </div>
-
-        <div class="quiz-guide">
-          <div class="guide-badge">기본 세팅</div>
-          <div class="guide-text">랜덤 범위에서 <strong>OX 10문제 → 4지선다 10문제</strong> 순서로 제공됩니다. 한 세트를 다 풀면 추가 문제를 이어서 생성합니다.</div>
-        </div>
-      </section>
-
-      <section class="card quiz-builder">
-        <div class="builder-title">문제의 범위 설정</div>
-        <p class="builder-copy">전체 범위 랜덤 학습도 가능하고, 특정 편/장/조 구간만 골라 집중 학습도 가능합니다.</p>
-
-        <div class="quiz-builder-grid">
-          <div class="field wide">
-            <label for="quizPreset">출제 방식</label>
-            <select id="quizPreset">
-              <option value="random">전체 범위 랜덤 출제</option>
-              <option value="custom">범위를 직접 정해서 출제</option>
-            </select>
-          </div>
-
-          <div class="field">
-            <label for="quizPartSelect">편 선택</label>
-            <select id="quizPartSelect">
-              <option value="">전체 편</option>
-            </select>
-          </div>
-
-          <div class="field">
-            <label for="quizChapterSelect">장 선택</label>
-            <select id="quizChapterSelect">
-              <option value="">전체 장</option>
-            </select>
-          </div>
-
-          <div class="field">
-            <label for="quizArticleStart">시작 조</label>
-            <input id="quizArticleStart" type="number" min="1" placeholder="예: 120" />
-          </div>
-
-          <div class="field">
-            <label for="quizArticleEnd">끝 조</label>
-            <input id="quizArticleEnd" type="number" min="1" placeholder="예: 150" />
-          </div>
-
-          <div class="field actions wide">
-            <button id="applyQuizRangeBtn" class="primary-btn" type="button">이 범위로 문제 시작</button>
-            <button id="clearQuizRangeBtn" class="secondary-btn" type="button">기본 랜덤으로 복원</button>
-          </div>
-        </div>
-
-        <p id="quizScopeSummary" class="scope-summary"></p>
-        <p id="quizPoolInfo" class="pool-info"></p>
-      </section>
-
-      <section class="card quiz-toolbar">
-        <div class="quiz-stats">
-          <span id="quizSessionLabel">현재 세트: OX 10문제 + 4지선다 10문제</span>
-          <span id="quizProgress">0 / 0 완료</span>
-          <span id="quizScore">정답 0</span>
-        </div>
-        <div class="quiz-actions">
-          <button id="resetBtn" class="secondary-btn" type="button">처음부터 다시 풀기</button>
-        </div>
-      </section>
-
-      <section id="quizList" class="quiz-list"></section>
-
-      <section id="quizMoreSection" class="card quiz-more hidden">
-        <h3>추가 문제를 진행하시겠습니까?</h3>
-        <p>지금 범위를 유지한 채 새로운 문제 세트를 이어서 풀 수 있습니다.</p>
-        <button id="loadMoreBtn" class="primary-btn" type="button">추가 문제 이어서 풀기</button>
-      </section>
-    </section>
-  </main>
-
-  <footer class="footer-note">
-    <div class="footer-note-inner">
-      주의사항 : 교육용 웹앱으로 업데이트 및 기타세부사항은 직접 엠지니를 활용하시기 바랍니다.
-    </div>
-  </footer>
-
-  <template id="articleTemplate">
-    <article class="article-card card">
-      <div class="article-head">
-        <div class="article-path"></div>
-        <h3 class="article-title"></h3>
-      </div>
-      <div class="article-preview"></div>
-      <div class="article-body"></div>
-    </article>
-  </template>
-
-  <template id="quizTemplate">
-    <article class="quiz-card card">
-      <div class="quiz-type"></div>
-      <div class="quiz-meta"></div>
-      <h3 class="quiz-prompt"></h3>
-      <div class="quiz-statement"></div>
-      <div class="quiz-options"></div>
-      <div class="quiz-result"></div>
-      <details class="source-box">
-        <summary>정확한 조문 보기</summary>
-        <div class="source-body"></div>
-      </details>
-    </article>
-  </template>
-
-  <script src="app.js"></script>
+<script src="app.js"></script>
 </body>
 </html>
