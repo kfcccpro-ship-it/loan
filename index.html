@@ -2,105 +2,144 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>여신업무방법서 학습앱</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#2563eb" />
+  <title>MG인재개발원 여신업무방법서 학습 지원</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <header class="topbar">
-    <div>
-      <h1>여신업무방법서 학습앱</h1>
-      <p class="subtitle">조문 확인 중심 · OX / 4지선다 · 편/장/조 선택형 학습</p>
+    <div class="hero">
+      <h1>MG인재개발원 여신업무방법서 학습 지원</h1>
+      <p class="subtitle">조문 확인 중심 · OX / 4지선다 · 스마트폰 중심 학습</p>
+      <p class="manual-version">현재 기준 업무방법서 버전: <strong>2026.03.12</strong> 개정본</p>
+      <p class="notice">주의사항 : 교육용 웹앱으로 업데이트 및 기타세부사항은 직접 엠지니를 활용하시기 바랍니다.</p>
     </div>
-    <div class="meta-pill">data.json + quiz.json</div>
   </header>
 
-  <nav class="tabs">
-    <button class="tab active" data-tab="manual">방법서</button>
-    <button class="tab" data-tab="quiz">문제풀이</button>
+  <nav class="tabs" aria-label="주요 기능">
+    <button class="tab active" data-tab="manual">방법서 검색</button>
+    <button class="tab" data-tab="quiz">학습용 문제</button>
   </nav>
 
   <main class="layout">
     <section id="manualTab" class="tab-panel active">
-      <section class="controls card">
-        <div class="search-wrap">
-          <input id="searchInput" type="search" placeholder="조문 번호, 제목, 내용 검색" />
+      <section class="card search-card">
+        <div class="card-header">
+          <div>
+            <h2>방법서 검색</h2>
+            <p>키워드를 입력하면 관련 조문을 빠르게 모아 보여주고, 검색어는 노란색으로 강조됩니다.</p>
+          </div>
         </div>
-        <div class="filter-wrap">
-          <select id="partSelect">
-            <option value="">전체 편</option>
-          </select>
-          <select id="chapterSelect">
-            <option value="">전체 장</option>
-          </select>
+
+        <div class="search-row">
+          <input id="searchInput" type="search" placeholder="예: 금리인하, 동일인대출, 중도상환수수료" />
+          <button id="clearSearchBtn" class="ghost-btn" type="button">초기화</button>
+        </div>
+
+        <div class="search-help">
+          <span id="articleCount" class="count-text"></span>
+          <span class="hint">목차에서 바로 조문을 선택하거나, 키워드로 결과를 좁혀 보세요.</span>
         </div>
       </section>
 
       <section class="manual-layout">
         <aside class="toc card">
-          <div class="card-title">목차</div>
+          <div class="toc-head">
+            <div>
+              <h3>목차</h3>
+              <p>조문을 선택하면 아래 본문으로 바로 이동합니다.</p>
+            </div>
+          </div>
           <div id="tocList" class="toc-list"></div>
         </aside>
 
         <section class="content">
-          <div id="articleCount" class="count-text"></div>
           <div id="articleList" class="article-list"></div>
         </section>
       </section>
     </section>
 
     <section id="quizTab" class="tab-panel">
-      <section class="quiz-builder card">
-        <div class="card-title">문제 범위 설정</div>
+      <section class="card quiz-hero">
+        <div class="card-header">
+          <div>
+            <h2>학습용 문제</h2>
+            <p>먼저 문제의 범위를 정한 뒤, 기본 세팅인 OX 10문제와 4지선다 10문제로 학습합니다.</p>
+          </div>
+        </div>
+
+        <div class="quiz-guide">
+          <div class="guide-badge">기본 세팅</div>
+          <div class="guide-text">랜덤 범위에서 <strong>OX 10문제 → 4지선다 10문제</strong> 순서로 제공됩니다. 다 풀면 추가 문제를 이어서 생성합니다.</div>
+        </div>
+      </section>
+
+      <section class="card quiz-builder">
+        <div class="builder-title">문제의 범위 설정</div>
+        <p class="builder-copy">전체 범위에서 랜덤으로 풀 수도 있고, 특정 편/장/조 구간만 골라서 집중 학습할 수도 있습니다.</p>
+
         <div class="quiz-builder-grid">
           <div class="field wide">
-            <label for="quizPreset">기본 세팅</label>
+            <label for="quizPreset">출제 방식</label>
             <select id="quizPreset">
-              <option value="random">랜덤 편 · 장 · 조</option>
-              <option value="custom">직접 선택</option>
+              <option value="random">전체 범위 랜덤 출제</option>
+              <option value="custom">범위를 직접 정해서 출제</option>
             </select>
           </div>
+
           <div class="field">
             <label for="quizPartSelect">편 선택</label>
             <select id="quizPartSelect">
               <option value="">전체 편</option>
             </select>
           </div>
+
           <div class="field">
             <label for="quizChapterSelect">장 선택</label>
             <select id="quizChapterSelect">
               <option value="">전체 장</option>
             </select>
           </div>
+
           <div class="field">
             <label for="quizArticleStart">시작 조</label>
             <input id="quizArticleStart" type="number" min="1" placeholder="예: 120" />
           </div>
+
           <div class="field">
             <label for="quizArticleEnd">끝 조</label>
             <input id="quizArticleEnd" type="number" min="1" placeholder="예: 150" />
           </div>
+
           <div class="field actions wide">
-            <button id="applyQuizRangeBtn" class="primary-btn">범위 적용</button>
-            <button id="clearQuizRangeBtn" class="secondary-btn">기본값으로 복원</button>
+            <button id="applyQuizRangeBtn" class="primary-btn" type="button">이 범위로 문제 시작</button>
+            <button id="clearQuizRangeBtn" class="secondary-btn" type="button">기본 랜덤으로 복원</button>
           </div>
         </div>
+
         <p id="quizScopeSummary" class="scope-summary"></p>
+        <p id="quizPoolInfo" class="pool-info"></p>
       </section>
 
-      <section class="quiz-toolbar card">
+      <section class="card quiz-toolbar">
         <div class="quiz-stats">
-          <span id="quizTotal">총 0문제</span>
-          <span id="quizProgress">0 / 0</span>
+          <span id="quizSessionLabel">현재 세트: OX 10문제 + 4지선다 10문제</span>
+          <span id="quizProgress">0 / 0 완료</span>
           <span id="quizScore">정답 0</span>
         </div>
         <div class="quiz-actions">
-          <button id="shuffleBtn" class="secondary-btn">문제 섞기</button>
-          <button id="resetBtn" class="secondary-btn">다시 풀기</button>
+          <button id="resetBtn" class="secondary-btn" type="button">처음부터 다시 풀기</button>
         </div>
       </section>
 
       <section id="quizList" class="quiz-list"></section>
+
+      <section id="quizMoreSection" class="card quiz-more hidden">
+        <h3>추가 문제를 진행하시겠습니까?</h3>
+        <p>지금 범위를 유지한 채 새로운 문제 세트를 이어서 풀 수 있습니다.</p>
+        <button id="loadMoreBtn" class="primary-btn" type="button">추가 문제 이어서 풀기</button>
+      </section>
     </section>
   </main>
 
@@ -108,7 +147,7 @@
     <article class="article-card card">
       <div class="article-head">
         <div class="article-path"></div>
-        <h2 class="article-title"></h2>
+        <h3 class="article-title"></h3>
       </div>
       <div class="article-body"></div>
     </article>
@@ -119,7 +158,6 @@
       <div class="quiz-type"></div>
       <div class="quiz-meta"></div>
       <h3 class="quiz-prompt"></h3>
-      <div class="quiz-statement"></div>
       <div class="quiz-options"></div>
       <div class="quiz-result"></div>
       <details class="source-box">
